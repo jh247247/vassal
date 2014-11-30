@@ -3,6 +3,7 @@ include ../Makefile.common
 OBJS+=startup.o
 OBJS+=main.o
 OBJS+=lcd_control.o
+OBJS+=rfft.o
 
 all: src
 

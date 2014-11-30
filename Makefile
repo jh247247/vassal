@@ -7,9 +7,7 @@ LDLIBS+=-lstm32
 STARTUP=startup.c
 all: libs src
 	$(CC) -o $(PROGRAM).elf $(LDFLAGS) \
-		-W1,--whole-archive \
 		src/app.a \
-		-W1,--no-whole-archive \
 		$(LDLIBS)
 	$(OBJCOPY) -O ihex $(PROGRAM).elf $(PROGRAM).hex
 	$(OBJCOPY) -O binary $(PROGRAM).elf $(PROGRAM).bin
