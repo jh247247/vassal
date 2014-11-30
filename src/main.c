@@ -11,6 +11,7 @@
 #include "stm32f10x_gpio.h"
 #include "stm32f10x_tim.h"
 #include "stm32f10x_adc.h"
+#include "stm32f10x_usart.h"
 #include "misc.h"
 #include "lcd_control.h"
 #include "rfft.h"
@@ -117,9 +118,72 @@ void TIM2_IRQHandler()
 
 void drawLine(int x, int y1,int y2) {
   int i;
+  if(y1>240)y1=240;
   for(i = y1; i < y2; i++) {
     LCD_SetPoint(x,i,0xF800);
   }
+}
+
+void USART1_Init(void)
+{
+  /* USART configuration structure for USART1 */
+  USART_InitTypeDef usart1_init_struct;
+  /* Bit configuration structure for GPIOA PIN9 and PIN10 */
+  GPIO_InitTypeDef gpio_init_struct;
+
+  /* Enalbe clock for USART1, AFIO and GPIOA */
+  RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1 | RCC_APB2Periph_AFIO |
+                         RCC_APB2Periph_GPIOB, ENABLE);
+
+  /* Set the usart output to the remapped pins */
+  GPIO_PinRemapConfig(GPIO_Remap_USART1, ENABLE);
+
+  /* GPIOA PIN9 alternative function Tx */
+  gpio_init_struct.GPIO_Pin = GPIO_Pin_6;
+  gpio_init_struct.GPIO_Speed = GPIO_Speed_50MHz;
+  gpio_init_struct.GPIO_Mode = GPIO_Mode_AF_PP;
+  GPIO_Init(GPIOB, &gpio_init_struct);
+  /* GPIOA PIN9 alternative function Rx */
+  gpio_init_struct.GPIO_Pin = GPIO_Pin_7;
+  gpio_init_struct.GPIO_Speed = GPIO_Speed_50MHz;
+  gpio_init_struct.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+  GPIO_Init(GPIOB, &gpio_init_struct);
+
+
+  /* Baud rate 9600, 8-bit data, One stop bit
+   * No parity, Do both Rx and Tx, No HW flow control
+   */
+  usart1_init_struct.USART_BaudRate = 9600;
+  usart1_init_struct.USART_WordLength = USART_WordLength_8b;
+  usart1_init_struct.USART_StopBits = USART_StopBits_1;
+  usart1_init_struct.USART_Parity = USART_Parity_No ;
+  usart1_init_struct.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
+  usart1_init_struct.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+  /* Configure USART1 */
+  USART_Init(USART1, &usart1_init_struct);
+  /* Enable RXNE interrupt */
+  //USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
+  /* Enable USART1 global interrupt */
+  //NVIC_EnableIRQ(USART1_IRQn);
+
+  /* Enable USART1 */
+  USART_Cmd(USART1, ENABLE);
+}
+
+
+void USART_PutChar(char ch)
+{
+  while(!(USART1->SR & USART_SR_TXE));
+  USART1->DR = ch;
+}
+
+void USART_PutString(char * str)
+{
+  while(*str != 0)
+    {
+      USART_PutChar(*str);
+      str++;
+    }
 }
 
 // has to be a power of 2, otherwise you get a hang.
@@ -137,41 +201,45 @@ int main(int argc, char *argv[])
   LCD_Initialization();
   ADC_Configuration();
   TIM_init();
+  USART1_Init();
 
   while(1)
     {
+
       if(g_adcFlag == 1) {
-	fft[i++] = readADC1(ADC_Channel_8);
-	g_adcFlag = 0;
+        fft[i++] = readADC1(ADC_Channel_8);
+        g_adcFlag = 0;
       }
 
       // FFT is full, render the screen.
       if(i == FFT_LEN) {
-	TIM_ITConfig(TIM2, TIM_IT_Update, DISABLE);
+        TIM_ITConfig(TIM2, TIM_IT_Update, DISABLE);
 
 
         for(i=0;i< FFT_LEN; i++) {
-	  fft[i]/=256;
-	}
-
-	rfft(fft,FFT_LEN);
-	for(i = 0; i < FFT_LEN/4; i++) {
-	  avgfft[i] += fft[i]/AVG;
+          fft[i]/=256;
         }
-	cnt++;
-	i = 0;
-	TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);
+
+        rfft(fft,FFT_LEN);
+        for(i = 0; i < FFT_LEN/4; i++) {
+          avgfft[i] += fft[i]/AVG;
+        }
+        cnt++;
+        i = 0;
+        TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);
       }
 
       if(cnt == AVG) {
-	TIM_ITConfig(TIM2, TIM_IT_Update, DISABLE);
-	LCD_Clear(0);
+	USART_PutString("AT\r\n");
+
+        TIM_ITConfig(TIM2, TIM_IT_Update, DISABLE);
+        LCD_Clear(0);
         for(i = 0; i < FFT_LEN/4; i++) {
-	  drawLine(i,0,fft[i]);
-	}
-	TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);
-	i = 0;
-	cnt = 0;
+          drawLine(i,0,fft[i]);
+        }
+        TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);
+        i = 0;
+        cnt = 0;
       }
 
 
