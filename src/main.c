@@ -12,42 +12,23 @@
 #include "stm32f10x_tim.h"
 #include "stm32f10x_adc.h"
 #include "stm32f10x_usart.h"
+#include "stm32f10x_flash.h"
 #include "misc.h"
 #include "lcd_control.h"
 #include "rfft.h"
 #include "math.h"
 
-int TIM_init(){
-  // I want to set this up for a sampling frequency of around 44KHz
-  RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
-
-  TIM_TimeBaseInitTypeDef timerInitStructure;
-  timerInitStructure.TIM_Prescaler = 100;
-  timerInitStructure.TIM_CounterMode = TIM_CounterMode_Up;
-  timerInitStructure.TIM_Period = 1;
-  timerInitStructure.TIM_ClockDivision = TIM_CKD_DIV1;
-  timerInitStructure.TIM_RepetitionCounter = 0;
-  TIM_TimeBaseInit(TIM2, &timerInitStructure);
-  TIM_Cmd(TIM2, ENABLE);
-  TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);
-
-  // enable interrupts for timer
-  NVIC_InitTypeDef nvicStructure;
-  nvicStructure.NVIC_IRQChannel = TIM2_IRQn;
-  nvicStructure.NVIC_IRQChannelPreemptionPriority = 0;
-  nvicStructure.NVIC_IRQChannelSubPriority = 1;
-  nvicStructure.NVIC_IRQChannelCmd = ENABLE;
-  NVIC_Init(&nvicStructure);
-
-  return 0;
-}
+#include "usart.h"
+#include "timer.h"
+#include "esp8266.h"
+#include <string.h>
 
 void ADC_Configuration(void)
 {
   ADC_InitTypeDef  ADC_InitStructure;
   /* PCLK2 is the APB2 clock */
   /* ADCCLK = PCLK2/6 = 72/6 = 12MHz*/
-  RCC_ADCCLKConfig(RCC_PCLK2_Div6);
+  RCC_ADCCLKConfig(RCC_PCLK2_Div4);
 
   /* Enable ADC1 clock so that we can talk to it */
   RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);
@@ -105,16 +86,7 @@ unsigned int readADC1(unsigned char channel)
   return ADC_GetConversionValue(ADC1);
 }
 
-volatile unsigned int g_adcFlag;
 
-void TIM2_IRQHandler()
-{
-  if (TIM_GetITStatus(TIM2, TIM_IT_Update) != RESET)
-    {
-      TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
-      g_adcFlag = 1;
-    }
-}
 
 void drawLine(int x, int y1,int y2) {
   int i;
@@ -124,124 +96,109 @@ void drawLine(int x, int y1,int y2) {
   }
 }
 
-void USART1_Init(void)
-{
-  /* USART configuration structure for USART1 */
-  USART_InitTypeDef usart1_init_struct;
-  /* Bit configuration structure for GPIOA PIN9 and PIN10 */
-  GPIO_InitTypeDef gpio_init_struct;
+void clock_init(){
+  /*Configure all clocks to max for best performance.
+   * If there are EMI, power, or noise problems, try slowing the clocks*/
 
-  /* Enalbe clock for USART1, AFIO and GPIOA */
-  RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1 | RCC_APB2Periph_AFIO |
-                         RCC_APB2Periph_GPIOB, ENABLE);
+  /* First set the flash latency to work with our clock*/
+  /*000 Zero wait state, if 0  MHz < SYSCLK <= 24 MHz
+    001 One wait state, if  24 MHz < SYSCLK <= 48 MHz
+    010 Two wait states, if 48 MHz < SYSCLK <= 72 MHz */
+  FLASH_SetLatency(FLASH_Latency_1);
 
-  /* Set the usart output to the remapped pins */
-  GPIO_PinRemapConfig(GPIO_Remap_USART1, ENABLE);
+  /* Start with HSI clock (internal 8mhz), divide by 2 and multiply by 9 to
+   * get maximum allowed frequency: 36Mhz
+   * Enable PLL, wait till it's stable, then select it as system clock*/
+  RCC_PLLConfig(RCC_PLLSource_HSI_Div2, RCC_PLLMul_9);
+  RCC_PLLCmd(ENABLE);
+  while(RCC_GetFlagStatus(RCC_FLAG_PLLRDY) == RESET) {}
+  RCC_SYSCLKConfig(RCC_SYSCLKSource_PLLCLK);
 
-  /* GPIOA PIN9 alternative function Tx */
-  gpio_init_struct.GPIO_Pin = GPIO_Pin_6;
-  gpio_init_struct.GPIO_Speed = GPIO_Speed_50MHz;
-  gpio_init_struct.GPIO_Mode = GPIO_Mode_AF_PP;
-  GPIO_Init(GPIOB, &gpio_init_struct);
-  /* GPIOA PIN9 alternative function Rx */
-  gpio_init_struct.GPIO_Pin = GPIO_Pin_7;
-  gpio_init_struct.GPIO_Speed = GPIO_Speed_50MHz;
-  gpio_init_struct.GPIO_Mode = GPIO_Mode_IN_FLOATING;
-  GPIO_Init(GPIOB, &gpio_init_struct);
+  /* Set HCLK, PCLK1, and PCLK2 to SCLK (these are default */
+  RCC_HCLKConfig(RCC_SYSCLK_Div1);
+  RCC_PCLK1Config(RCC_HCLK_Div1);
+  RCC_PCLK2Config(RCC_HCLK_Div1);
 
+  /* Set ADC clk to 9MHz (14MHz max, 18MHz default)*/
+  RCC_ADCCLKConfig(RCC_PCLK2_Div4);
 
-  /* Baud rate 9600, 8-bit data, One stop bit
-   * No parity, Do both Rx and Tx, No HW flow control
+  /*To save power, use below functions to stop the clock to ceratin
+   * peripherals
+   * RCC_AHBPeriphClockCmd
    */
-  usart1_init_struct.USART_BaudRate = 9600;
-  usart1_init_struct.USART_WordLength = USART_WordLength_8b;
-  usart1_init_struct.USART_StopBits = USART_StopBits_1;
-  usart1_init_struct.USART_Parity = USART_Parity_No ;
-  usart1_init_struct.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
-  usart1_init_struct.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
-  /* Configure USART1 */
-  USART_Init(USART1, &usart1_init_struct);
-  /* Enable RXNE interrupt */
-  //USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
-  /* Enable USART1 global interrupt */
-  //NVIC_EnableIRQ(USART1_IRQn);
-
-  /* Enable USART1 */
-  USART_Cmd(USART1, ENABLE);
-}
-
-
-void USART_PutChar(char ch)
-{
-  while(!(USART1->SR & USART_SR_TXE));
-  USART1->DR = ch;
-}
-
-void USART_PutString(char * str)
-{
-  while(*str != 0)
-    {
-      USART_PutChar(*str);
-      str++;
-    }
 }
 
 // has to be a power of 2, otherwise you get a hang.
 #define FFT_LEN 512
 
 #define AVG 5
-
 int main(int argc, char *argv[])
 {
   int i = 0;
   int cnt = 0;
+  int max, maxi;
+
   float fft[FFT_LEN];
   float avgfft[FFT_LEN];
+  char buf[32];
+
+  clock_init();
   LCD_Configuration();
   LCD_Initialization();
   ADC_Configuration();
   TIM_init();
-  USART1_Init();
+  USART12_Init();
+  ESP8266_init();
 
-  while(1)
-    {
+  ESP8266_connect("Home&Hosed","143c91ffbf323f9b07439610a4");
+  if(ESP8266_isConnected()) {
+    USART2_PutString("ESP8266 Connected!\n");
+  }
 
-      if(g_adcFlag == 1) {
-        fft[i++] = readADC1(ADC_Channel_8);
-        g_adcFlag = 0;
-      }
+  while(1) {
 
-      // FFT is full, render the screen.
-      if(i == FFT_LEN) {
-        TIM_ITConfig(TIM2, TIM_IT_Update, DISABLE);
-
-
-        for(i=0;i< FFT_LEN; i++) {
-          fft[i]/=256;
-        }
-
-        rfft(fft,FFT_LEN);
-        for(i = 0; i < FFT_LEN/4; i++) {
-          avgfft[i] += fft[i]/AVG;
-        }
-        cnt++;
-        i = 0;
-        TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);
-      }
-
-      if(cnt == AVG) {
-	USART_PutString("AT\r\n");
-
-        TIM_ITConfig(TIM2, TIM_IT_Update, DISABLE);
-        LCD_Clear(0);
-        for(i = 0; i < FFT_LEN/4; i++) {
-          drawLine(i,0,fft[i]);
-        }
-        TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);
-        i = 0;
-        cnt = 0;
-      }
-
-
+    if(g_adcFlag == 1) {
+      fft[i++] = readADC1(ADC_Channel_8);
+      g_adcFlag = 0;
     }
+
+    // FFT is full, render the screen.
+    if(i == FFT_LEN) {
+      TIM_ITConfig(TIM2, TIM_IT_Update, DISABLE);
+
+
+      for(i=0;i< FFT_LEN; i++) {
+        fft[i]/=256;
+      }
+
+      rfft(fft,FFT_LEN);
+      for(i = 0; i < FFT_LEN/4; i++) {
+        avgfft[i] += fft[i]/AVG;
+      }
+      cnt++;
+      i = 0;
+      TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);
+    }
+
+    if(cnt == AVG) {
+
+      TIM_ITConfig(TIM2, TIM_IT_Update, DISABLE);
+      LCD_Clear(0);
+      max = 0;
+      maxi = 0;
+      for(i = 0; i < FFT_LEN/2; i++) {
+	if(fft[i] > max) {
+	  max = fft[i]; //float to int, dont care.
+	  maxi = i;
+	}
+        drawLine(i,0,fft[i]);
+      }
+      TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);
+      itoa(buf,maxi*(44000/FFT_LEN),10);
+      ESP8266_sendPacket("UDP","192.168.1.10","40",buf, strlen(buf));
+
+      i = 0;
+      cnt = 0;
+    }
+  }
 }
