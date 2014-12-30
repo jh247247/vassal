@@ -1,23 +1,26 @@
 #ifndef __LCD_CONTROLLER_H__
 #define __LCD_CONTROLLER_H__
 
-#define Set_Cs GPIO_SetBits(GPIOD,GPIO_Pin_0);
-#define Clr_Cs GPIO_ResetBits(GPIOD,GPIO_Pin_0);
 
-#define Set_Rs GPIO_SetBits(GPIOD,GPIO_Pin_1);
-#define Clr_Rs GPIO_ResetBits(GPIOD,GPIO_Pin_1);
+// TODO: make these touch the registers directly
+#define Set_Cs GPIOB->ODR |= (1<<9);
+#define Clr_Cs GPIOB->ODR &= ~(1<<9);
 
-#define Set_nWr GPIO_SetBits(GPIOD,GPIO_Pin_2);
-#define Clr_nWr GPIO_ResetBits(GPIOD,GPIO_Pin_2);
+#define Set_Rs GPIOC->ODR |= (1<<13);
+#define Clr_Rs GPIOC->ODR &= ~(1<<13);
 
-#define Set_nRd GPIO_SetBits(GPIOD,GPIO_Pin_3);
-#define Clr_nRd GPIO_ResetBits(GPIOD,GPIO_Pin_3);
+#define Set_nWr GPIOC->ODR |= (1<<14);
+#define Clr_nWr GPIOC->ODR &= ~(1<<14);
 
-#define Set_Rst GPIO_SetBits(GPIOD,GPIO_Pin_4);
-#define Clr_Rst GPIO_ResetBits(GPIOD,GPIO_Pin_4);
+#define Set_nRd GPIOC->ODR |= (1<<15);
+#define Clr_nRd GPIOC->ODR &= ~(1<<15);
 
-#define LCD_Light_On GPIO_SetBits(GPIOD,GPIO_Pin_5);
-#define LCD_Light_Off GPIO_ResetBits(GPIOD,GPIO_Pin_5);
+#define Set_Rst GPIOA->ODR |= (1<<15);
+#define Clr_Rst GPIOA->ODR &= ~(1<<15);
+
+#define LCD_Light_On GPIOD->ODR |= (1<<5);
+#define LCD_Light_Off GPIOD->ODR &= ~(1<<5);
+
 
 /* LCD colors */
 #define LCD_White				0xFFFF

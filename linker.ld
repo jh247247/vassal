@@ -1,13 +1,26 @@
 ENTRY(Reset_Handler)
-MEMORY {
-	/*Adust in following line variable LENGTH to RAM size of target MCU*/
-	RAM (RWX) : ORIGIN = 0x20000000 , LENGTH = 20K
-	EXTSRAM (RWX) : ORIGIN = 0x68000000 , LENGTH = 0
-	/*Adust in following line variable LENGTH to (FLASH size - 2K) of target MCU*/
-	FLASH (RX) : ORIGIN = 0x08000000 , LENGTH = 126K
-	/*Adust in following line variable ORIGIN to (0x08000000 + FLASH size - 2K) of target MCU*/
-	EEMUL (RWX) : ORIGIN = 0x08000000+126K, LENGTH = 2K
+
+/* Memory Spaces Definitionsx */
+MEMORY
+{
+	RAM (xrw) : ORIGIN = 0x20000000, LENGTH = 20K
+	FLASH (rx) : ORIGIN = 0x8004000, LENGTH = 112K
+	FLASHB1 (rx) : ORIGIN = 0x00000000, LENGTH = 0
+	EXTMEMB0 (rx) : ORIGIN = 0x00000000, LENGTH = 0
+	EXTMEMB1 (rx) : ORIGIN = 0x00000000, LENGTH = 0
+	EXTMEMB2 (rx) : ORIGIN = 0x00000000, LENGTH = 0
+	EXTMEMB3 (rx) : ORIGIN = 0x00000000, LENGTH = 0
 }
+
+/* MEMORY { */
+/* 	/\*Adust in following line variable LENGTH to RAM size of target MCU*\/ */
+/* 	RAM (RWX) : ORIGIN = 0x20000000 , LENGTH = 20K */
+/* 	EXTSRAM (RWX) : ORIGIN = 0x68000000 , LENGTH = 0 */
+/* 	/\*Adust in following line variable LENGTH to (FLASH size - 2K) of target MCU*\/ */
+/* 	FLASH (RX) : ORIGIN = 0x08000000 , LENGTH = 126K */
+/* 	/\*Adust in following line variable ORIGIN to (0x08000000 + FLASH size - 2K) of target MCU*\/ */
+/* 	EEMUL (RWX) : ORIGIN = 0x08000000+126K, LENGTH = 2K */
+/* } */
 _estack     = ORIGIN(RAM)+LENGTH(RAM);                /* end of the stack */
 _seemul = ORIGIN(EEMUL);                                 /* start of the eeprom emulation area */
 _min_stack      = 0x100;                                 /* minimum stack space to reserve for the user app */
@@ -144,4 +157,3 @@ of the section so we begin them at 0. */
 .note.gnu.arm.ident 0 : { KEEP (*(.note.gnu.arm.ident)) }
 /DISCARD/ : { *(.note.GNU-stack) *(.gnu_debuglink) }
 }
-
