@@ -43,9 +43,7 @@ void clock_init(){
       /* PCLK2 = HCLK */
       RCC_PCLK1Config(RCC_HCLK_Div2);
       /* PCLK1 = HCLK/2 */
-      RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_2);
-      /* PLLCLK = 8MHz * 16 = 128 MHz */
-      //RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_16);
+      RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_9);
 
       RCC_PLLCmd(ENABLE);
       /* Enable PLL */

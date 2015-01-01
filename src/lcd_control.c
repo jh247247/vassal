@@ -18,27 +18,27 @@ static LCD_OrientationMode_t orientation_mode = LCD_ORIENTATION_DEFAULT;
 
 void LCD_Configuration(void)
 {
-	GPIO_InitTypeDef GPIO_InitStructure;
+  GPIO_InitTypeDef GPIO_InitStructure;
 
-	// Open the clock we want
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA|
-			       RCC_APB2Periph_GPIOB|
-			       RCC_APB2Periph_GPIOC|
-			       RCC_APB2Periph_GPIOD|
-			       RCC_APB2Periph_GPIOE, ENABLE);
+  // Open the clock we want
+  RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA|
+                         RCC_APB2Periph_GPIOB|
+                         RCC_APB2Periph_GPIOC|
+                         RCC_APB2Periph_GPIOD|
+                         RCC_APB2Periph_GPIOE, ENABLE);
 
-	// Configure the LCD pins for push-pull output
-	// This is just the lower 8 bits of data
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_All;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-	GPIO_Init(GPIOA,&GPIO_InitStructure);
-	GPIO_Init(GPIOB,&GPIO_InitStructure);
-	GPIO_Init(GPIOC,&GPIO_InitStructure);
-	GPIO_Init(GPIOD,&GPIO_InitStructure);
-	GPIO_Init(GPIOE,&GPIO_InitStructure);
+  // Configure the LCD pins for push-pull output
+  // This is just the lower 8 bits of data
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_All;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+  GPIO_Init(GPIOA,&GPIO_InitStructure);
+  GPIO_Init(GPIOB,&GPIO_InitStructure);
+  GPIO_Init(GPIOC,&GPIO_InitStructure);
+  GPIO_Init(GPIOD,&GPIO_InitStructure);
+  GPIO_Init(GPIOE,&GPIO_InitStructure);
 
-	LCD_Light_On;
+  LCD_Light_On;
 }
 
 /*
@@ -61,18 +61,18 @@ void LCD_Initialization()
   Set_Rs;
   Set_nRd;
   Set_Rst;
-  LCD_Reset();	// reset LCD
+  LCD_Reset();  // reset LCD
 
 
   LCD_WriteRegister(0x00e7,0x0010);
-  LCD_WriteRegister(0x0000,0x0001);			// Starts internal oscillator
+  LCD_WriteRegister(0x0000,0x0001);                     // Starts internal oscillator
   LCD_WriteRegister(0x0001,0x0100);
-  LCD_WriteRegister(0x0002,0x0700);			// Power on
-  LCD_WriteRegister(0x0003,(1 << 12) | (1 << 5) | (1 << 4));		// 65K
+  LCD_WriteRegister(0x0002,0x0700);                     // Power on
+  LCD_WriteRegister(0x0003,(1 << 12) | (1 << 5) | (1 << 4));            // 65K
   LCD_WriteRegister(0x0004,0x0000);
   LCD_WriteRegister(0x0008,0x0207);
   LCD_WriteRegister(0x0009,0x0000);
-  LCD_WriteRegister(0x000a,0x0000);			// Display setting
+  LCD_WriteRegister(0x000a,0x0000);                     // Display setting
   LCD_WriteRegister(0x000c,0x0001);
   LCD_WriteRegister(0x000d,0x0000);
   LCD_WriteRegister(0x000f,0x0000);
@@ -148,8 +148,8 @@ void LCD_Initialization()
  */
 __inline void LCD_SetCursor(u16 x,u16 y)
 {
-	LCD_WriteRegister(0x20,y);		// Y position register
-	LCD_WriteRegister(0x21,319 - x);	// X position register
+  LCD_WriteRegister(0x20,y);            // Y position register
+  LCD_WriteRegister(0x21,319 - x);      // X position register
 }
 
 /*
@@ -161,11 +161,11 @@ __inline void LCD_SetCursor(u16 x,u16 y)
  */
 __inline void LCD_SetWindow(u16 Startx,u16 Starty,u16 Endx,u16 Endy)
 {
-	LCD_SetCursor(Startx,Starty);
-	LCD_WriteRegister(0x50,Startx);
-	LCD_WriteRegister(0x52,Starty);
-	LCD_WriteRegister(0x51,Endx);
-	LCD_WriteRegister(0x53,Endy);
+  LCD_SetCursor(Startx,Starty);
+  LCD_WriteRegister(0x50,Startx);
+  LCD_WriteRegister(0x52,Starty);
+  LCD_WriteRegister(0x51,Endx);
+  LCD_WriteRegister(0x53,Endy);
 }
 
 /*
@@ -177,19 +177,19 @@ __inline void LCD_SetWindow(u16 Startx,u16 Starty,u16 Endx,u16 Endy)
  */
 void LCD_Clear(u16 Color)
 {
-	u32 i;
-	LCD_SetCursor(0,0);
-	Clr_Cs;
-	LCD_WriteIndex(0x22);		// GRAM access port
-	Set_Rs;
-	for (i = 0;i < 76800;i++)
-	{
-		LCD_WriteData(Color);
-		Clr_nWr;
-		Set_nWr;
-	}
+  u32 i;
+  LCD_SetCursor(0,0);
+  Clr_Cs;
+  LCD_WriteIndex(0x22);         // GRAM access port
+  Set_Rs;
+  for (i = 0;i < 76800;i++)
+    {
+      LCD_WriteData(Color);
+      Clr_nWr;
+      Set_nWr;
+    }
 
-	Set_Cs;
+  Set_Cs;
 }
 
 /*
@@ -201,15 +201,15 @@ void LCD_Clear(u16 Color)
  */
 void LCD_SetPoint(u16 x,u16 y,u16 Color)
 {
-	if ((x > 320) || (y > 240))
-	{
-		return;
-	}
-	LCD_SetCursor(x,y);
-	LCD_WR_Start();
-	LCD_WriteData(Color);
-	Clr_nWr; Set_nWr;
-	LCD_WR_End();
+  if ((x > 320) || (y > 240))
+    {
+      return;
+    }
+  LCD_SetCursor(x,y);
+  LCD_WR_Start();
+  LCD_WriteData(Color);
+  Clr_nWr; Set_nWr;
+  LCD_WR_End();
 }
 
 /*
@@ -221,16 +221,16 @@ void LCD_SetPoint(u16 x,u16 y,u16 Color)
  */
 void LCD_DrawPicture(u16 Startx,u16 Starty,u16 Endx,u16 Endy,u16 *pic)
 {
-	u16 i;
-	LCD_SetWindow(Startx,Starty,Endx,Endy);
-	LCD_SetCursor(Startx,Starty);
-	LCD_WR_Start();
-	for (i = 0;i < (Endx * Endy);i++)
-	{
-		LCD_WriteData(*pic++);
-		Clr_nWr;Set_nWr;
-	}
-	LCD_WR_End();
+  u16 i;
+  LCD_SetWindow(Startx,Starty,Endx,Endy);
+  LCD_SetCursor(Startx,Starty);
+  LCD_WR_Start();
+  for (i = 0;i < (Endx * Endy);i++)
+    {
+      LCD_WriteData(*pic++);
+      Clr_nWr;Set_nWr;
+    }
+  LCD_WR_End();
 }
 
 /*
@@ -243,85 +243,81 @@ void LCD_DrawPicture(u16 Startx,u16 Starty,u16 Endx,u16 Endy,u16 *pic)
 void LCD_Test()
 {
 
-  LCD_Clear(LCD_White);
-  LCD_Clear(LCD_Red);
-  LCD_Clear(LCD_Green);
-  LCD_Clear(LCD_Blue);
-	/* u8 R_data,G_data,B_data,i,j; */
+  u8 R_data,G_data,B_data,i,j;
 
-	/* LCD_SetCursor(0,0); */
-	/* LCD_WriteRegister(0x50,0);		// Set horizontal start of window at 0 */
-	/* LCD_WriteRegister(0x51,239);	// Set horizontal end of window at 239 */
-	/* LCD_WriteRegister(0x52,0);		// Set vertical start of window at 0 */
-	/* LCD_WriteRegister(0x53,319);	// Set vertical end of window at 319 */
-	/* LCD_WR_Start(); */
-	/* R_data = 0;G_data = 0;B_data = 0; */
-	/* /\********** RED **********\/ */
-	/* for (j = 0;j < 50;j++) */
-	/* { */
-	/* 	for (i = 0;i < 240;i++) */
-	/* 	{ */
-	/* 		R_data = i / 8; */
-	/* 		LCD_WriteData(R_data << 11 | G_data << 5 | B_data); */
-	/* 		Clr_nWr;Set_nWr; */
-	/* 	} */
-	/* } */
-	/* R_data = 0x1f;G_data = 0x3f;B_data = 0x1f; */
-	/* for (j = 0;j < 50;j++) */
-	/* { */
-	/* 	for (i = 0; i < 240;i++) */
-	/* 	{ */
-	/* 		G_data = 0x3f - (i / 4); */
-	/* 		B_data = 0x1f - (i / 8); */
-	/* 		LCD_WriteData(R_data << 11 | G_data << 5 | B_data); */
-	/* 		Clr_nWr;Set_nWr; */
-	/* 	} */
-	/* } */
-	/* /\********** GREEN **********\/ */
-	/* R_data = 0;G_data = 0;B_data = 0; */
-	/* for (j = 0;j < 50;j++) */
-	/* { */
-	/* 	for (i = 0;i < 240;i++) */
-	/* 	{ */
-	/* 		G_data = i / 4; */
-	/* 		LCD_WriteData(R_data << 11 | G_data << 5 | B_data); */
-	/* 		Clr_nWr;Set_nWr; */
-	/* 	} */
-	/* } */
-	/* R_data = 0x1f;G_data = 0x3f;B_data = 0x1f; */
-	/* for (j = 0;j < 50;j++) */
-	/* { */
-	/* 	for (i = 0;i < 240;i++) */
-	/* 	{ */
-	/* 		R_data = 0x1f - (i / 8); */
-	/* 		B_data = 0x1f - (i / 8); */
-	/* 		LCD_WriteData(R_data << 11 | G_data << 5 | B_data); */
-	/* 		Clr_nWr;Set_nWr; */
-	/* 	} */
-	/* } */
-	/* /\********** BLUE **********\/ */
-	/* R_data = 0;G_data = 0;B_data = 0; */
-	/* for (j = 0;j < 60; j++) */
-	/* { */
-	/* 	for(i = 0;i < 240;i++) */
-	/* 	{ */
-	/* 		B_data = i / 8; */
-	/* 		LCD_WriteData(R_data << 11 | G_data << 5 | B_data); */
-	/* 		Clr_nWr;Set_nWr; */
-	/* 	} */
-	/* } */
-	/* R_data = 0x1f;G_data = 0x3f;B_data = 0x1f; */
-	/* for (j = 0;j < 60;j++) */
-	/* { */
-	/* 	for (i = 0;i < 240;i++) */
-	/* 	{ */
-	/* 		G_data = 0x3f - (i / 4); */
-	/* 		R_data = 0x1f - (i / 8); */
-	/* 		LCD_WriteData(R_data << 11 | G_data << 5 | B_data); */
-	/* 		Clr_nWr;Set_nWr; */
-	/* 	} */
-	/* } */
-	/* LCD_WR_End(); */
+  LCD_SetCursor(0,0);
+  LCD_WriteRegister(0x50,0);         // Set horizontal start of window at 0
+  LCD_WriteRegister(0x51,239);       // Set horizontal end of window at 239
+  LCD_WriteRegister(0x52,0);         // Set vertical start of window at 0
+  LCD_WriteRegister(0x53,319);       // Set vertical end of window at 319
+  LCD_WR_Start();
+  R_data = 0;G_data = 0;B_data = 0;
+  /********** RED **********/
+  for (j = 0;j < 50;j++)
+  {
+     for (i = 0;i < 240;i++)
+     {
+             R_data = i / 8;
+             LCD_WriteData(R_data << 11 | G_data << 5 | B_data);
+             Clr_nWr;Set_nWr;
+     }
+  }
+  R_data = 0x1f;G_data = 0x3f;B_data = 0x1f;
+  for (j = 0;j < 50;j++)
+  {
+     for (i = 0; i < 240;i++)
+     {
+             G_data = 0x3f - (i / 4);
+             B_data = 0x1f - (i / 8);
+             LCD_WriteData(R_data << 11 | G_data << 5 | B_data);
+             Clr_nWr;Set_nWr;
+     }
+  }
+  /********** GREEN **********/
+  R_data = 0;G_data = 0;B_data = 0;
+  for (j = 0;j < 50;j++)
+  {
+     for (i = 0;i < 240;i++)
+     {
+             G_data = i / 4;
+             LCD_WriteData(R_data << 11 | G_data << 5 | B_data);
+             Clr_nWr;Set_nWr;
+     }
+  }
+  R_data = 0x1f;G_data = 0x3f;B_data = 0x1f;
+  for (j = 0;j < 50;j++)
+  {
+     for (i = 0;i < 240;i++)
+     {
+             R_data = 0x1f - (i / 8);
+             B_data = 0x1f - (i / 8);
+             LCD_WriteData(R_data << 11 | G_data << 5 | B_data);
+             Clr_nWr;Set_nWr;
+     }
+  }
+  /********** BLUE **********/
+  R_data = 0;G_data = 0;B_data = 0;
+  for (j = 0;j < 60; j++)
+  {
+     for(i = 0;i < 240;i++)
+     {
+             B_data = i / 8;
+             LCD_WriteData(R_data << 11 | G_data << 5 | B_data);
+             Clr_nWr;Set_nWr;
+     }
+  }
+  R_data = 0x1f;G_data = 0x3f;B_data = 0x1f;
+  for (j = 0;j < 60;j++)
+  {
+     for (i = 0;i < 240;i++)
+     {
+             G_data = 0x3f - (i / 4);
+             R_data = 0x1f - (i / 8);
+             LCD_WriteData(R_data << 11 | G_data << 5 | B_data);
+             Clr_nWr;Set_nWr;
+     }
+  }
+  LCD_WR_End();
 }
 
 /*
@@ -333,13 +329,13 @@ void LCD_Test()
  */
 u16 LCD_BGR2RGB(u16 color)
 {
-	u16 r,g,b,rgb;
-	b = (color >> 0) & 0x1f;
-	g = (color >> 5) & 0x3f;
-	r = (color >> 11) & 0x1f;
+  u16 r,g,b,rgb;
+  b = (color >> 0) & 0x1f;
+  g = (color >> 5) & 0x3f;
+  r = (color >> 11) & 0x1f;
 
-	rgb = (b << 11) + (g << 5) + (r << 0);
-	return(rgb);
+  rgb = (b << 11) + (g << 5) + (r << 0);
+  return(rgb);
 }
 
 /*
@@ -351,12 +347,12 @@ u16 LCD_BGR2RGB(u16 color)
  */
 __inline void LCD_WriteIndex(u16 idx)
 {
-	Clr_Rs;
-	Set_nRd;
-	LCD_WriteData(idx);
-	Clr_nWr;
-	Set_nWr;
-	Set_Rs;
+  Clr_Rs;
+  Set_nRd;
+  LCD_WriteData(idx);
+  Clr_nWr;
+  Set_nWr;
+  Set_Rs;
 }
 
 /*
@@ -369,14 +365,12 @@ __inline void LCD_WriteIndex(u16 idx)
 void LCD_WriteData(u16 data)
 {
   // assume that cs is already low
-  //GPIOA->ODR &= 0xFF00;
-  //GPIOA->ODR |= ((data&0xFF00)>>8);
-  GPIOA->ODR = (GPIOA->ODR&0xFF00)|((data&0xFF00)>>8);
+  //GPIOA->ODR = (GPIOA->ODR&0xFF00)|((data&0xFF00)>>8);
+  ((uint8_t __IO*)&GPIOA->ODR)[0] = data>>8;
   Clr_nWr;
   Set_nWr;
-  //GPIOA->ODR &= 0xFF00;
-  //GPIOA->ODR |= (data&0xFF00);
-  GPIOA->ODR = (GPIOA->ODR&0xFF00)|(data&0x00FF);
+  //GPIOA->ODR = (GPIOA->ODR&0xFF00)|(data&0x00FF);
+  ((uint8_t __IO*)&GPIOA->ODR)[0] = data;
 
   // have to raise cs later
 }
@@ -391,13 +385,13 @@ void LCD_WriteData(u16 data)
 void LCD_WR_Start(void)
 {
 
-	Clr_Cs;
-	Clr_Rs;
-	Set_nRd;
-	LCD_WriteData(0x22);
-	Clr_nWr;
-	Set_nWr;
-	Set_Rs;
+  Clr_Cs;
+  Clr_Rs;
+  Set_nRd;
+  LCD_WriteData(0x22);
+  Clr_nWr;
+  Set_nWr;
+  Set_Rs;
 }
 
 /*
@@ -409,7 +403,7 @@ void LCD_WR_Start(void)
  */
 void LCD_WR_End(void)
 {
-	Set_Cs;
+  Set_Cs;
 }
 
 /*
@@ -422,13 +416,13 @@ void LCD_WR_End(void)
 __inline u16 LCD_ReadData(void)
 {
   // FIXME
-	u16 temp;
-	GPIOB->CRH = (GPIOB->CRH & 0x00000000) | 0x44444444;		// configure pins for reading
-	GPIOC->CRL = (GPIOC->CRL & 0x00000000) | 0x44444444;
-	temp = ((GPIOB->IDR&0xff00) | (GPIOC->IDR&0x00ff));
-	GPIOB->CRH = (GPIOB->CRH & 0x00000000) | 0x44444444;		// reconfigure back to normal operation
-	GPIOC->CRL = (GPIOC->CRL & 0x00000000) | 0x44444444;
-	return temp;
+  u16 temp;
+  GPIOB->CRH = (GPIOB->CRH & 0x00000000) | 0x44444444;          // configure pins for reading
+  GPIOC->CRL = (GPIOC->CRL & 0x00000000) | 0x44444444;
+  temp = ((GPIOB->IDR&0xff00) | (GPIOC->IDR&0x00ff));
+  GPIOB->CRH = (GPIOB->CRH & 0x00000000) | 0x44444444;          // reconfigure back to normal operation
+  GPIOC->CRL = (GPIOC->CRL & 0x00000000) | 0x44444444;
+  return temp;
 }
 
 /*
@@ -440,13 +434,13 @@ __inline u16 LCD_ReadData(void)
  */
 __inline u16 LCD_ReadRegister(u16 index)
 {
-	Clr_Cs;
-	LCD_WriteIndex(index);
-	Clr_nRd;
-	index = LCD_ReadData();
-	Set_nRd;
-	Set_Cs;
-	return index;
+  Clr_Cs;
+  LCD_WriteIndex(index);
+  Clr_nRd;
+  index = LCD_ReadData();
+  Set_nRd;
+  Set_Cs;
+  return index;
 }
 
 /*
@@ -458,17 +452,17 @@ __inline u16 LCD_ReadRegister(u16 index)
  */
 __inline void LCD_WriteRegister(u16 index,u16 data)
 {
-	Clr_Cs;
-	Clr_Rs;
-	Set_nRd;
-	LCD_WriteData(index);
+  Clr_Cs;
+  Clr_Rs;
+  Set_nRd;
+  LCD_WriteData(index);
 
-	Clr_nWr;Set_nWr;
-	Set_Rs;
-	LCD_WriteData(data);
+  Clr_nWr;Set_nWr;
+  Set_Rs;
+  LCD_WriteData(data);
 
-	Clr_nWr;Set_nWr;
-	Set_Cs;
+  Clr_nWr;Set_nWr;
+  Set_Cs;
 }
 
 /*
@@ -480,12 +474,12 @@ __inline void LCD_WriteRegister(u16 index,u16 data)
  */
 void LCD_Reset()
 {
-	Set_Rst;
-	LCD_Delay(50000);
-	Clr_Rst;
-	LCD_Delay(50000);
-	Set_Rst;
-	LCD_Delay(50000);
+  Set_Rst;
+  LCD_Delay(50000);
+  Clr_Rst;
+  LCD_Delay(50000);
+  Set_Rst;
+  LCD_Delay(50000);
 }
 
 /*
@@ -497,14 +491,14 @@ void LCD_Reset()
  */
 void LCD_Backlight(u16 status)
 {
-	if(status >= 1)
-	{
-		LCD_Light_On;
-	}
-	else
-	{
-		LCD_Light_Off;
-	}
+  if(status >= 1)
+    {
+      LCD_Light_On;
+    }
+  else
+    {
+      LCD_Light_Off;
+    }
 }
 
 /*
@@ -516,7 +510,7 @@ void LCD_Backlight(u16 status)
  */
 void LCD_Delay(vu32 nCount)
 {
-	for(;nCount != 0;nCount--);
+  for(;nCount != 0;nCount--);
 }
 
 /*
@@ -528,28 +522,28 @@ void LCD_Delay(vu32 nCount)
  */
 void LCD_SetOrientation(LCD_OrientationMode_t m)
 {
-	uint16_t em;
-	switch (m)
-	{
-		case LCD_PORTRAIT_TOP_DOWN:
-			em = 0x1030;
-			break;
-		case LCD_PORTRAIT_BOTTOM_UP:
-			em = 0x1010;
-			break;
-		case LCD_LANDSCAPE_TOP_DOWN:
-			em = 0x1018;
-			break;
-		case LCD_LANDSCAPE_BOTTOM_UP:
-			em = 0x1008;
-			break;
-		default:
-			em = 0x0130;
-			break;
-	}
-	LCD_WriteRegister(0x0003,em);
-	orientation_mode = m;
-	LCD_SetCursor(0,0);
+  uint16_t em;
+  switch (m)
+    {
+    case LCD_PORTRAIT_TOP_DOWN:
+      em = 0x1030;
+      break;
+    case LCD_PORTRAIT_BOTTOM_UP:
+      em = 0x1010;
+      break;
+    case LCD_LANDSCAPE_TOP_DOWN:
+      em = 0x1018;
+      break;
+    case LCD_LANDSCAPE_BOTTOM_UP:
+      em = 0x1008;
+      break;
+    default:
+      em = 0x0130;
+      break;
+    }
+  LCD_WriteRegister(0x0003,em);
+  orientation_mode = m;
+  LCD_SetCursor(0,0);
 }
 
 /*
@@ -561,7 +555,7 @@ void LCD_SetOrientation(LCD_OrientationMode_t m)
  */
 LCD_OrientationMode_t LCD_GetOrientation(void)
 {
-	return orientation_mode;
+  return orientation_mode;
 }
 
 /*
@@ -573,16 +567,16 @@ LCD_OrientationMode_t LCD_GetOrientation(void)
  */
 uint16_t LCD_GetWidth(void)
 {
-	switch (orientation_mode)
-	{
-		case LCD_LANDSCAPE_TOP_DOWN:
-		case LCD_LANDSCAPE_BOTTOM_UP:
-			return LCD_HEIGHT_HW;
-		case LCD_PORTRAIT_TOP_DOWN:
-		case LCD_PORTRAIT_BOTTOM_UP:
-		default:
-			return LCD_WIDTH_HW;
-	}
+  switch (orientation_mode)
+    {
+    case LCD_LANDSCAPE_TOP_DOWN:
+    case LCD_LANDSCAPE_BOTTOM_UP:
+      return LCD_HEIGHT_HW;
+    case LCD_PORTRAIT_TOP_DOWN:
+    case LCD_PORTRAIT_BOTTOM_UP:
+    default:
+      return LCD_WIDTH_HW;
+    }
 }
 
 /*
@@ -594,14 +588,14 @@ uint16_t LCD_GetWidth(void)
  */
 uint16_t LCD_GetHeight(void)
 {
-	switch (orientation_mode)
-	{
-		case LCD_LANDSCAPE_TOP_DOWN:
-		case LCD_LANDSCAPE_BOTTOM_UP:
-			return LCD_WIDTH_HW;
-		case LCD_PORTRAIT_TOP_DOWN:
-		case LCD_PORTRAIT_BOTTOM_UP:
-		default:
-			return LCD_HEIGHT_HW;
-	}
+  switch (orientation_mode)
+    {
+    case LCD_LANDSCAPE_TOP_DOWN:
+    case LCD_LANDSCAPE_BOTTOM_UP:
+      return LCD_WIDTH_HW;
+    case LCD_PORTRAIT_TOP_DOWN:
+    case LCD_PORTRAIT_BOTTOM_UP:
+    default:
+      return LCD_HEIGHT_HW;
+    }
 }

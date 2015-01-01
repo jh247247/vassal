@@ -1,70 +1,68 @@
 #ifndef __LCD_CONTROLLER_H__
 #define __LCD_CONTROLLER_H__
 
+#define Set_Cs GPIOB->BSRR = (1<<9);
+#define Clr_Cs GPIOB->BRR = (1<<9);
 
-// TODO: make these touch the registers directly
-#define Set_Cs GPIOB->ODR |= (1<<9);
-#define Clr_Cs GPIOB->ODR &= ~(1<<9);
+#define Set_Rs GPIOC->BSRR = (1<<13);
+#define Clr_Rs GPIOC->BRR = (1<<13);
 
-#define Set_Rs GPIOC->ODR |= (1<<13);
-#define Clr_Rs GPIOC->ODR &= ~(1<<13);
+#define Set_nWr GPIOC->BSRR = (1<<14);
+#define Clr_nWr GPIOC->BRR = (1<<14);
 
-#define Set_nWr GPIOC->ODR |= (1<<14);
-#define Clr_nWr GPIOC->ODR &= ~(1<<14);
+#define Set_nRd GPIOC->BSRR = (1<<15);
+#define Clr_nRd GPIOC->BRR = (1<<15);
 
-#define Set_nRd GPIOC->ODR |= (1<<15);
-#define Clr_nRd GPIOC->ODR &= ~(1<<15);
+#define Set_Rst GPIOA->BSRR = (1<<15);
+#define Clr_Rst GPIOA->BRR = (1<<15);
 
-#define Set_Rst GPIOA->ODR |= (1<<15);
-#define Clr_Rst GPIOA->ODR &= ~(1<<15);
-
-#define LCD_Light_On GPIOD->ODR |= (1<<5);
-#define LCD_Light_Off GPIOD->ODR &= ~(1<<5);
+#define LCD_Light_On GPIOD->BSRR = (1<<5);
+#define LCD_Light_Off GPIOD->BRR = (1<<5);
 
 
 /* LCD colors */
-#define LCD_White				0xFFFF
-#define LCD_Black				0x0000
-#define LCD_Blue				0x001F
-#define LCD_Red					0xF800
-#define LCD_Green				0x07E0
-#define LCD_Cyan				0x07FF
+#define LCD_White                               0xFFFF
+#define LCD_Black                               0x0000
+#define LCD_Blue                                0x001F
+#define LCD_Red                                 0xF800
+#define LCD_Green                               0x07E0
+#define LCD_Cyan                                0x07FF
 
 #define LCD_NCS_GPIO_PORT GPIOC
 #define LCD_NCS_PIN GPIO_Pin_8
 
 typedef enum {
-	LCD_PORTRAIT_TOP_DOWN,
-	LCD_PORTRAIT_BOTTOM_UP,
-	LCD_LANDSCAPE_TOP_DOWN,
-	LCD_LANDSCAPE_BOTTOM_UP,
+  LCD_PORTRAIT_TOP_DOWN,
+  LCD_PORTRAIT_BOTTOM_UP,
+  LCD_LANDSCAPE_TOP_DOWN,
+  LCD_LANDSCAPE_BOTTOM_UP,
 } LCD_OrientationMode_t;
 
-#define LCD_WIDTH_HW		240
-#define LCD_HEIGHT_HW		320
+#define LCD_WIDTH_HW            240
+#define LCD_HEIGHT_HW           320
 
-#define LCD_PORTRAIT		0
-#define LCD_LANDSCAPE		1
-#define LCD_ORIENTATION	LCD_LANDSCAPE
+#define LCD_PORTRAIT            0
+#define LCD_LANDSCAPE           1
+#define LCD_ORIENTATION LCD_LANDSCAPE
 
 #if LCD_ORIENTATION == LCD_PORTRAIT
-	#define LCD_WIDTH			240
-	#define LCD_HEIGHT		320
-	#define LCD_CHARS_PER_LINE	10
-	#define LCD_CHAR_LINES	13
-	#define LCD_ENTRY_MODE_DEFAULT 0x1030
-	#define LCD_ORIENTATION_DEFAULT LCD_PORTRAIT_TOP_DOWN
+#define LCD_WIDTH                       240
+#define LCD_HEIGHT              320
+#define LCD_CHARS_PER_LINE      10
+#define LCD_CHAR_LINES  13
+#define LCD_ENTRY_MODE_DEFAULT 0x1030
+#define LCD_ORIENTATION_DEFAULT LCD_PORTRAIT_TOP_DOWN
 #else
-	#define LCD_WIDTH			320
-	#define LCD_HEIGHT		240
-	#define LCD_CHARS_PER_LINE	15
-	#define LCD_CHAR_LINES		10
-	#define LCD_ENTRY_MODE_DEFAULT 0x1018
-	#define LCD_ORIENTATION_DEFAULT LCD_LANDSCAPE_TOP_DOWN
+#define LCD_WIDTH                       320
+#define LCD_HEIGHT              240
+#define LCD_CHARS_PER_LINE      15
+#define LCD_CHAR_LINES          10
+#define LCD_ENTRY_MODE_DEFAULT 0x1018
+#define LCD_ORIENTATION_DEFAULT LCD_LANDSCAPE_TOP_DOWN
 #endif
 
-#define LCD_LINE_HORIZONTAL	0x00
-#define LCD_LINE_VERTICAL		0x01
+#define LCD_LINE_HORIZONTAL     0x00
+#define LCD_LINE_VERTICAL               0x01
 
 /* exported functions */
 void LCD_Configuration(void);
@@ -90,8 +88,8 @@ u16 LCD_ReadRegister(u16 index);
 
 static __INLINE uint16_t LCD_RGB2Pixel565(uint8_t r,uint8_t g,uint8_t b)
 {
-	/* RGB2PIXEL565 from a macro in Greg Haerr's Nano-X, MPL license */
-	return ((((r) & 0xf8) << 8) | (((g) & 0xfc) << 3) | (((b) & 0xf8) >> 3 ));
+  /* RGB2PIXEL565 from a macro in Greg Haerr's Nano-X, MPL license */
+  return ((((r) & 0xf8) << 8) | (((g) & 0xfc) << 3) | (((b) & 0xf8) >> 3 ));
 }
 
 void LCD_SetOrientation(LCD_OrientationMode_t m);
