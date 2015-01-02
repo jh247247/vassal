@@ -58,6 +58,20 @@ void clock_init(){
 
 }
 
+void delay() {
+  u16 a,b,c;
+  for(; a < 65000; a++) {
+    for(; b < 65000; b++) {
+      for(; c < 65000; c++) {
+        __asm__("nop");
+        __asm__("nop");
+        __asm__("nop");
+        __asm__("nop");
+      }
+    }
+  }
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -68,8 +82,7 @@ int main(int argc, char *argv[])
   /* float fft[FFT_LEN]; */
   /* float avgfft[FFT_LEN]; */
   /* char buf[32]; */
-
-  clock_init(RCC_PLLMul_9);
+  clock_init();
   /* LCD_Configuration(); */
   /* LCD_Initialization(); */
   /* ADC_Configuration(); */
@@ -78,7 +91,8 @@ int main(int argc, char *argv[])
   /* ESP8266_init(); */
   LCD_Configuration();
   LCD_Initialization();
+  LCD_Clear(LCD_Black);
   while(1) {
-    LCD_Test();
+    LCD_DrawString(50,50,"Hello World!\0");
   }
 }

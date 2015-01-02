@@ -28,9 +28,6 @@
 #define LCD_Green                               0x07E0
 #define LCD_Cyan                                0x07FF
 
-#define LCD_NCS_GPIO_PORT GPIOC
-#define LCD_NCS_PIN GPIO_Pin_8
-
 typedef enum {
   LCD_PORTRAIT_TOP_DOWN,
   LCD_PORTRAIT_BOTTOM_UP,
@@ -43,7 +40,7 @@ typedef enum {
 
 #define LCD_PORTRAIT            0
 #define LCD_LANDSCAPE           1
-#define LCD_ORIENTATION LCD_LANDSCAPE
+#define LCD_ORIENTATION LCD_PORTRAIT
 
 #if LCD_ORIENTATION == LCD_PORTRAIT
 #define LCD_WIDTH                       240
@@ -58,7 +55,7 @@ typedef enum {
 #define LCD_CHARS_PER_LINE      15
 #define LCD_CHAR_LINES          10
 #define LCD_ENTRY_MODE_DEFAULT 0x1018
-#define LCD_ORIENTATION_DEFAULT LCD_LANDSCAPE_TOP_DOWN
+#define LCD_ORIENTATION_DEFAULT LCD_LANDSCAPE_BOTTOM_UP
 #endif
 
 #define LCD_LINE_HORIZONTAL     0x00
@@ -72,6 +69,8 @@ void LCD_WriteRegister(u16 index,u16 data);
 void LCD_SetCursor(u16 x,u16 y);
 void LCD_SetWindow(u16 Startx,u16 Starty,u16 Endx,u16 Endy);
 void LCD_DrawPicture(u16 Startx,u16 Starty,u16 Endx,u16 Endy,u16 *pic);
+void LCD_DrawChar(u16 Startx,u16 Starty,u8 c);
+void LCD_DrawString(u16 Startx, u16 Starty, char* s);
 void LCD_SetPoint(u16 x,u16 y,u16 Color);
 void LCD_Clear(u16 Color);
 void LCD_Delay(u32 nCount);
