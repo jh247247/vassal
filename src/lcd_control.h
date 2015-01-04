@@ -84,6 +84,7 @@ void LCD_WR_End(void);
 u16 LCD_BGR2RGB(u16 color);
 u16 LCD_ReadData(void);
 u16 LCD_ReadRegister(u16 index);
+u16 LCD_GetPixel(u16 x, u16 y);
 
 static __INLINE uint16_t LCD_RGB2Pixel565(uint8_t r,uint8_t g,uint8_t b)
 {

@@ -82,6 +82,8 @@ int main(int argc, char *argv[])
   /* float fft[FFT_LEN]; */
   /* float avgfft[FFT_LEN]; */
   /* char buf[32]; */
+  LCD_Configuration();
+  LCD_Initialization();
   clock_init();
   /* LCD_Configuration(); */
   /* LCD_Initialization(); */
@@ -89,10 +91,12 @@ int main(int argc, char *argv[])
   /* TIM_init(); */
   /* USART12_Init(); */
   /* ESP8266_init(); */
-  LCD_Configuration();
-  LCD_Initialization();
-  LCD_Clear(LCD_Black);
+
+  LCD_Clear(LCD_Cyan);
+  LCD_DrawString(50,50,"Hello World!\0");
   while(1) {
-    LCD_DrawString(50,50,"Hello World!\0");
+    LCD_Test();
+    LCD_Clear(LCD_Cyan);
+    delay();
   }
 }

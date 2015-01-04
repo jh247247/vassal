@@ -25,21 +25,27 @@ void LCD_Configuration(void)
   RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA|
                          RCC_APB2Periph_GPIOB|
                          RCC_APB2Periph_GPIOC|
-                         RCC_APB2Periph_GPIOD|
-                         RCC_APB2Periph_GPIOE, ENABLE);
+			 RCC_APB2Periph_GPIOD, ENABLE);
 
   // Configure the LCD pins for push-pull output
   // This is just the lower 8 bits of data
-  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_All;
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0|GPIO_Pin_1|GPIO_Pin_2|
+    GPIO_Pin_3|GPIO_Pin_4|GPIO_Pin_5|GPIO_Pin_6|GPIO_Pin_7|GPIO_Pin_15;
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
   GPIO_Init(GPIOA,&GPIO_InitStructure);
-  GPIO_Init(GPIOB,&GPIO_InitStructure);
-  GPIO_Init(GPIOC,&GPIO_InitStructure);
-  GPIO_Init(GPIOD,&GPIO_InitStructure);
-  GPIO_Init(GPIOE,&GPIO_InitStructure);
 
-  LCD_Light_On;
+
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;
+  GPIO_Init(GPIOB,&GPIO_InitStructure);
+
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_13|GPIO_Pin_14|GPIO_Pin_15;
+  GPIO_Init(GPIOC,&GPIO_InitStructure);
+
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5;
+  GPIO_Init(GPIOD,&GPIO_InitStructure);
+
+
 }
 
 /*
@@ -137,6 +143,7 @@ void LCD_Initialization()
   LCD_WriteRegister(0x0020,0x0000);
   LCD_WriteRegister(0x0021,0x0000);
 
+  LCD_Light_On;
 }
 
 /*
@@ -258,7 +265,7 @@ void LCD_DrawChar(u16 Startx,u16 Starty,u8 c)
         LCD_SetPoint(Startx+i,Starty+j,LCD_White);
         //LCD_WriteData(LCD_White);
       } else {
-        LCD_SetPoint(Startx+i,Starty+j,LCD_Blue);
+        LCD_SetPoint(Startx+i,Starty+j,LCD_Black);
         //LCD_WriteData(LCD_Red);
       }
       //Clr_nWr;Set_nWr;
@@ -277,9 +284,6 @@ void LCD_DrawString(u16 Startx, u16 Starty, char* s) {
   }
 }
 
-
-
-
 /*
  * Name: void LCD_Test()
  * Function: test the LCD
@@ -289,82 +293,94 @@ void LCD_DrawString(u16 Startx, u16 Starty, char* s) {
  */
 void LCD_Test()
 {
+  int x,y;
+  u16 dat;
 
-  u8 R_data,G_data,B_data,i,j;
+  for(x = 58; x >= 50; x--) {
+    for(y = 0; y < 240; y++) {
+      dat = LCD_GetPixel(x,y);
+      dat = ~dat;
+      LCD_SetPoint(x,y,dat);
+    }
+  }
 
-  LCD_SetCursor(0,0);
-  LCD_WriteRegister(0x50,0);         // Set horizontal start of window at 0
-  LCD_WriteRegister(0x51,239);       // Set horizontal end of window at 239
-  LCD_WriteRegister(0x52,0);         // Set vertical start of window at 0
-  LCD_WriteRegister(0x53,319);       // Set vertical end of window at 319
-  LCD_WR_Start();
-  R_data = 0;G_data = 0;B_data = 0;
-  /********** RED **********/
-  for (j = 0;j < 50;j++)
-    {
-      for (i = 0;i < 240;i++)
-        {
-          R_data = i / 8;
-          LCD_WriteData(R_data << 11 | G_data << 5 | B_data);
-          Clr_nWr;Set_nWr;
-        }
-    }
-  R_data = 0x1f;G_data = 0x3f;B_data = 0x1f;
-  for (j = 0;j < 50;j++)
-    {
-      for (i = 0; i < 240;i++)
-        {
-          G_data = 0x3f - (i / 4);
-          B_data = 0x1f - (i / 8);
-          LCD_WriteData(R_data << 11 | G_data << 5 | B_data);
-          Clr_nWr;Set_nWr;
-        }
-    }
-  /********** GREEN **********/
-  R_data = 0;G_data = 0;B_data = 0;
-  for (j = 0;j < 50;j++)
-    {
-      for (i = 0;i < 240;i++)
-        {
-          G_data = i / 4;
-          LCD_WriteData(R_data << 11 | G_data << 5 | B_data);
-          Clr_nWr;Set_nWr;
-        }
-    }
-  R_data = 0x1f;G_data = 0x3f;B_data = 0x1f;
-  for (j = 0;j < 50;j++)
-    {
-      for (i = 0;i < 240;i++)
-        {
-          R_data = 0x1f - (i / 8);
-          B_data = 0x1f - (i / 8);
-          LCD_WriteData(R_data << 11 | G_data << 5 | B_data);
-          Clr_nWr;Set_nWr;
-        }
-    }
-  /********** BLUE **********/
-  R_data = 0;G_data = 0;B_data = 0;
-  for (j = 0;j < 60; j++)
-    {
-      for(i = 0;i < 240;i++)
-        {
-          B_data = i / 8;
-          LCD_WriteData(R_data << 11 | G_data << 5 | B_data);
-          Clr_nWr;Set_nWr;
-        }
-    }
-  R_data = 0x1f;G_data = 0x3f;B_data = 0x1f;
-  for (j = 0;j < 60;j++)
-    {
-      for (i = 0;i < 240;i++)
-        {
-          G_data = 0x3f - (i / 4);
-          R_data = 0x1f - (i / 8);
-          LCD_WriteData(R_data << 11 | G_data << 5 | B_data);
-          Clr_nWr;Set_nWr;
-        }
-    }
-  LCD_WR_End();
+
+
+  /* u8 R_data,G_data,B_data,i,j; */
+
+  /* LCD_SetCursor(0,0); */
+  /* LCD_WriteRegister(0x50,0);         // Set horizontal start of window at 0 */
+  /* LCD_WriteRegister(0x51,239);       // Set horizontal end of window at 239 */
+  /* LCD_WriteRegister(0x52,0);         // Set vertical start of window at 0 */
+  /* LCD_WriteRegister(0x53,319);       // Set vertical end of window at 319 */
+  /* LCD_WR_Start(); */
+  /* R_data = 0;G_data = 0;B_data = 0; */
+  /* /\********** RED **********\/ */
+  /* for (j = 0;j < 50;j++) */
+  /*   { */
+  /*     for (i = 0;i < 240;i++) */
+  /*       { */
+  /*         R_data = i / 8; */
+  /*         LCD_WriteData(R_data << 11 | G_data << 5 | B_data); */
+  /*         Clr_nWr;Set_nWr; */
+  /*       } */
+  /*   } */
+  /* R_data = 0x1f;G_data = 0x3f;B_data = 0x1f; */
+  /* for (j = 0;j < 50;j++) */
+  /*   { */
+  /*     for (i = 0; i < 240;i++) */
+  /*       { */
+  /*         G_data = 0x3f - (i / 4); */
+  /*         B_data = 0x1f - (i / 8); */
+  /*         LCD_WriteData(R_data << 11 | G_data << 5 | B_data); */
+  /*         Clr_nWr;Set_nWr; */
+  /*       } */
+  /*   } */
+  /* /\********** GREEN **********\/ */
+  /* R_data = 0;G_data = 0;B_data = 0; */
+  /* for (j = 0;j < 50;j++) */
+  /*   { */
+  /*     for (i = 0;i < 240;i++) */
+  /*       { */
+  /*         G_data = i / 4; */
+  /*         LCD_WriteData(R_data << 11 | G_data << 5 | B_data); */
+  /*         Clr_nWr;Set_nWr; */
+  /*       } */
+  /*   } */
+  /* R_data = 0x1f;G_data = 0x3f;B_data = 0x1f; */
+  /* for (j = 0;j < 50;j++) */
+  /*   { */
+  /*     for (i = 0;i < 240;i++) */
+  /*       { */
+  /*         R_data = 0x1f - (i / 8); */
+  /*         B_data = 0x1f - (i / 8); */
+  /*         LCD_WriteData(R_data << 11 | G_data << 5 | B_data); */
+  /*         Clr_nWr;Set_nWr; */
+  /*       } */
+  /*   } */
+  /* /\********** BLUE **********\/ */
+  /* R_data = 0;G_data = 0;B_data = 0; */
+  /* for (j = 0;j < 60; j++) */
+  /*   { */
+  /*     for(i = 0;i < 240;i++) */
+  /*       { */
+  /*         B_data = i / 8; */
+  /*         LCD_WriteData(R_data << 11 | G_data << 5 | B_data); */
+  /*         Clr_nWr;Set_nWr; */
+  /*       } */
+  /*   } */
+  /* R_data = 0x1f;G_data = 0x3f;B_data = 0x1f; */
+  /* for (j = 0;j < 60;j++) */
+  /*   { */
+  /*     for (i = 0;i < 240;i++) */
+  /*       { */
+  /*         G_data = 0x3f - (i / 4); */
+  /*         R_data = 0x1f - (i / 8); */
+  /*         LCD_WriteData(R_data << 11 | G_data << 5 | B_data); */
+  /*         Clr_nWr;Set_nWr; */
+  /*       } */
+  /*   } */
+  /* LCD_WR_End(); */
 }
 
 /*
@@ -462,14 +478,57 @@ void LCD_WR_End(void)
  */
 __inline u16 LCD_ReadData(void)
 {
-  // FIXME
+  // need to make this faster somehow...
   u16 temp;
-  GPIOB->CRH = (GPIOB->CRH & 0x00000000) | 0x44444444;          // configure pins for reading
-  GPIOC->CRL = (GPIOC->CRL & 0x00000000) | 0x44444444;
-  temp = ((GPIOB->IDR&0xff00) | (GPIOC->IDR&0x00ff));
-  GPIOB->CRH = (GPIOB->CRH & 0x00000000) | 0x44444444;          // reconfigure back to normal operation
-  GPIOC->CRL = (GPIOC->CRL & 0x00000000) | 0x44444444;
+  GPIOA->CRL = (GPIOA->CRL & 0x00000000) | 0x44444444; // set data
+						       // pins as
+						       // input
+  Clr_nRd;
+  // apparently we need the nops otherwise the data dies.
+  __asm__("nop");
+  __asm__("nop");
+  __asm__("nop");
+  __asm__("nop");
+  temp = ((uint8_t __IO*)&GPIOA->IDR)[0]<<8; // read high byte
+  Set_nRd; Clr_nRd;
+  __asm__("nop");
+  __asm__("nop");
+  __asm__("nop");
+  __asm__("nop");
+  temp += ((uint8_t __IO*)&GPIOA->IDR)[0]; // read low byte
+
+  GPIOA->CRL = (GPIOA->CRL & 0x00000000) | 0x33333333; // set pins as
+                                                       // output again
+
   return temp;
+}
+
+/*
+  Name: LCD_GetPixel(u16 x, u16 y)
+  Function: Get value of pixel
+  Input: pixel coords
+  Output: pixel data
+  Call: x = LCD_GetPixel(0,0);
+  Note: This is actually REALLY slow compared to other lcd
+        methods. Please do not overuse it.
+ */
+u16 LCD_GetPixel(u16 x, u16 y) {
+  u16 dat;
+  // dummy read (copy of LCD_Register with some changes)
+  LCD_SetCursor(x,y);
+  Clr_Cs;
+  LCD_WriteIndex(0x22);
+  Clr_nRd;
+  LCD_ReadData();
+  LCD_WriteIndex(0x22);
+  Clr_nRd;
+  // proper read now that the data has been clocked into the register.
+  dat = LCD_ReadData();
+  Set_nRd;
+  Set_Cs;
+
+  return dat;
+
 }
 
 /*
