@@ -28,6 +28,22 @@
 #define LCD_Green                               0x07E0
 #define LCD_Cyan                                0x07FF
 
+#define LCD_Dark_Green                          0x03E0
+#define LCD_Dark_Cyan                           0x03EF
+#define LCD_Maroon                              0x7800
+#define LCD_Purple                              0x780F
+#define LCD_Olive                               0x7BE0
+
+#define LCD_Light_Gray                          0xC618
+#define LCD_Dark_Gray                           0x7BEF
+#define LCD_Dark_Blue                           0x0010
+#define LCD_Magenta                             0xF81F
+#define LCD_Yellow                              0xFFE0
+
+// convert 888 to 565
+#define RGB_conv(r,g,b) (((r)>>3)<<11)|(((g)>>2)<<5)|(((b)>>3)&0x1F)
+
+
 typedef enum {
   LCD_PORTRAIT_TOP_DOWN,
   LCD_PORTRAIT_BOTTOM_UP,
@@ -69,10 +85,13 @@ void LCD_WriteRegister(u16 index,u16 data);
 void LCD_SetCursor(u16 x,u16 y);
 void LCD_SetWindow(u16 Startx,u16 Starty,u16 Endx,u16 Endy);
 void LCD_DrawPicture(u16 Startx,u16 Starty,u16 Endx,u16 Endy,u16 *pic);
-void LCD_DrawChar(u16 Startx,u16 Starty,u8 c);
-void LCD_DrawString(u16 Startx, u16 Starty, char* s);
+void LCD_DrawChar(u16 Startx,u16 Starty,u8 c, u16 foreground, u16 background);
+void LCD_DrawString(u16 Startx, u16 Starty, char* s, u16 foreground,
+		      u16 background, u8 trans);
 void LCD_SetPoint(u16 x,u16 y,u16 Color);
 void LCD_Clear(u16 Color);
+void LCD_FillRect(u16 Startx, u16 Starty, u16 Endx, u16 Endy, u16 Color);
+void LCD_DrawLine(u16 Startx, u16 Starty, u16 Endx, u16 Endy, u16 Color);
 void LCD_Delay(u32 nCount);
 void LCD_Test(void);
 void LCD_WriteData(u16 data);

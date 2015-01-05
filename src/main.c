@@ -75,8 +75,7 @@ void delay() {
 
 int main(int argc, char *argv[])
 {
-  /* int i = 0; */
-  /* int cnt = 0; */
+  int cnt = 0;
   /* int max, maxi; */
 
   /* float fft[FFT_LEN]; */
@@ -92,11 +91,18 @@ int main(int argc, char *argv[])
   /* USART12_Init(); */
   /* ESP8266_init(); */
 
-  LCD_Clear(LCD_Cyan);
-  LCD_DrawString(50,50,"Hello World!\0");
+  LCD_Clear(LCD_Black);
   while(1) {
-    LCD_Test();
-    LCD_Clear(LCD_Cyan);
-    delay();
+    LCD_DrawLine(cnt%240,cnt%240,0,cnt%320,LCD_Black);
+    LCD_DrawLine(0,cnt%240,cnt%320,cnt%320,LCD_Black);
+    LCD_DrawLine(0,cnt%240,0,cnt%320,LCD_Black);
+    LCD_DrawString(cnt%240,cnt%320,"Hello World!\0",LCD_Black,0,0);
+    cnt++;
+
+    //LCD_FillRect(72,0,240,320,cnt);
+    LCD_DrawLine(cnt%240,cnt%240,0,cnt%320,LCD_Yellow);
+    LCD_DrawLine(0,cnt%240,cnt%320,cnt%320,LCD_Yellow);
+    LCD_DrawLine(0,cnt%240,0,cnt%320,LCD_Yellow);
+    LCD_DrawString(cnt%240,cnt%320,"Hello World!\0",LCD_Yellow,0,0);
   }
 }

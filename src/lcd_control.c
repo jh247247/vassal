@@ -7,11 +7,17 @@
  * you as much as they have helped me.
  */
 
+// TODO: line drawing methods
+// TODO: other basic graphics methods
+// TODO: general optimizations I guess
+// TODO: handle dynamic lcd orientation
+
 #include "stm32f10x.h"
 #include "stm32f10x_rcc.h"
 #include "stm32f10x_gpio.h"
 #include "lcd_control.h"
 #include "smallfont.h"
+#include "stdlib.h"
 
 u16 LCD_DeviceCode;
 
@@ -25,7 +31,7 @@ void LCD_Configuration(void)
   RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA|
                          RCC_APB2Periph_GPIOB|
                          RCC_APB2Periph_GPIOC|
-			 RCC_APB2Periph_GPIOD, ENABLE);
+                         RCC_APB2Periph_GPIOD, ENABLE);
 
   // Configure the LCD pins for push-pull output
   // This is just the lower 8 bits of data
@@ -99,7 +105,7 @@ void LCD_Initialization()
   for (i = 50000;i > 0;i--);
   LCD_WriteRegister(0x0013,0x1900);
   LCD_WriteRegister(0x0029,0x0023);
-  LCD_WriteRegister(0x002b,0x0000);
+  LCD_WriteRegister(0x002b,0x000E);
   for (i = 50000;i > 0;i--);
   for (i = 50000;i > 0;i--);
   LCD_WriteRegister(0x0020,0x0000);
@@ -122,7 +128,7 @@ void LCD_Initialization()
   LCD_WriteRegister(0x0051,0x00ef);
   LCD_WriteRegister(0x0052,0x0000);
   LCD_WriteRegister(0x0053,0x013f);
-  LCD_WriteRegister(0x0060,0x2700);
+  LCD_WriteRegister(0x0060,0xA700);
   LCD_WriteRegister(0x0061,0x0001);
   LCD_WriteRegister(0x006a,0x0000);
   LCD_WriteRegister(0x0080,0x0000);
@@ -155,8 +161,13 @@ void LCD_Initialization()
  */
 __inline void LCD_SetCursor(u16 x,u16 y)
 {
-  LCD_WriteRegister(0x20,y);            // Y position register
-  LCD_WriteRegister(0x21,319 - x);      // X position register
+#if LCD_ORIENTATION == LCD_LANDSCAPE
+  LCD_WriteRegister(0x20,y);
+  LCD_WriteRegister(0x21,x);
+#else
+  LCD_WriteRegister(0x20,x);
+  LCD_WriteRegister(0x21,y);
+#endif
 }
 
 /*
@@ -168,10 +179,17 @@ __inline void LCD_SetCursor(u16 x,u16 y)
  */
 __inline void LCD_SetWindow(u16 Startx,u16 Starty,u16 Endx,u16 Endy)
 {
+#if LCD_ORIENTATION == LCD_LANDSCAPE
+  LCD_WriteRegister(0x50,Starty);
+  LCD_WriteRegister(0x52,Startx);
+  LCD_WriteRegister(0x51,Endy);
+  LCD_WriteRegister(0x53,Endx);
+#else
   LCD_WriteRegister(0x50,Startx);
   LCD_WriteRegister(0x52,Starty);
   LCD_WriteRegister(0x51,Endx);
   LCD_WriteRegister(0x53,Endy);
+#endif
 
   LCD_SetCursor(Startx,Starty);
 
@@ -201,6 +219,93 @@ void LCD_Clear(u16 Color)
   Set_Cs;
 }
 
+void LCD_FillRect(u16 Startx, u16 Starty, u16 Endx, u16 Endy, u16 Color)
+{
+  u32 i;
+  LCD_SetWindow(Startx,Starty,Endx,Endy);
+  LCD_SetCursor(Startx,Starty);
+  Clr_Cs;
+  LCD_WriteIndex(0x22);         // GRAM access port
+  Set_Rs;
+  for (i=(Endx-Startx)*(Endy-Starty);i > 0;i--)
+    {
+      LCD_WriteData(Color);
+      Clr_nWr;
+      Set_nWr;
+    }
+
+  Set_Cs;
+
+  LCD_WriteRegister(0x0050,0x0000);
+  LCD_WriteRegister(0x0051,0x00ef);
+  LCD_WriteRegister(0x0052,0x0000);
+  LCD_WriteRegister(0x0053,0x013f);
+}
+
+
+void LCD_HorizontalLine(u16 Startx, u16 Endx, u16 y, u16 Color){
+  u16 i;
+  LCD_SetCursor(Startx,y);
+  Clr_Cs;
+  LCD_WriteIndex(0x22);
+  Set_Rs;
+  for (i=Endx; i > Startx;i--)
+    {
+      LCD_WriteData(Color);
+      Clr_nWr;
+      Set_nWr;
+    }
+  Set_Cs;
+}
+
+void LCD_VerticalLine(u16 x, u16 Starty, u16 Endy, u16 Color){
+
+  u16 i;
+  u16 oldAM = LCD_ReadRegister(0x03);
+  LCD_WriteRegister(0x03,oldAM|0x0008);
+  LCD_SetCursor(x,Starty);
+  Clr_Cs;
+  LCD_WriteIndex(0x22);
+  Set_Rs;
+  for (i=Endy; i > Starty;i--)
+    {
+      LCD_WriteData(Color);
+      Clr_nWr;
+      Set_nWr;
+    }
+  Set_Cs;
+  LCD_WriteRegister(0x03,oldAM);
+}
+
+
+void LCD_DrawLine(u16 x0, u16 x1, u16 y0, u16 y1, u16 Color) {
+  // check if we can optimize stuff.
+  if(x0 == x1) {
+    LCD_VerticalLine(x0, y0, y1, Color);
+    return;
+  }
+
+  if(y0 == y1) {
+    LCD_HorizontalLine(x0, x1, y0, Color);
+    return;
+  }
+
+  // bresenham
+  int dx = abs(x1-x0), sx = x0<x1 ? 1 : -1;
+  int dy = abs(y1-y0), sy = y0<y1 ? 1 : -1;
+
+  int err = (dx>dy ? dx : -dy)/2, e2;
+
+  while(x0 != x1 && y0 != y1) {
+    LCD_SetPoint(x0,y0,Color);
+    e2 = err;
+    if(e2 > -dx) { err -= dy; x0 += sx;}
+    if(e2 < dy) { err += dx; y0 += sy;}
+  }
+
+}
+
+
 /*
  * Name: void LCD_SetPoint(u16 x,u16 y,u16 Color)
  * Function: Draw point at x,y
@@ -210,10 +315,18 @@ void LCD_Clear(u16 Color)
  */
 void LCD_SetPoint(u16 x,u16 y,u16 Color)
 {
+#if LCD_ORIENTATION == LCD_LANDSCAPE
   if ((x > 320) || (y > 240))
     {
       return;
     }
+#else
+  if ((x > 240) || (y > 320))
+    {
+      return;
+    }
+#endif
+
   LCD_SetCursor(x,y);
   LCD_WR_Start();
   LCD_WriteData(Color);
@@ -242,43 +355,67 @@ void LCD_DrawPicture(u16 Startx,u16 Starty,u16 Endx,u16 Endy,u16 *pic)
   LCD_WR_End();
 }
 
-// it would be nice to optimize this...
-
-/*
- * Name: void LCD_DrawPicture(u16 Startx,u16 Starty,u16 Endx,u16 Endy,u16 *pic)
- * Function: display a picture
- * Input: starting/ending x,y-positions, picture head pointer
- * Output: none
- * Call: LCD_DrawPicture(0,0,100,100,(u16*) demo);
- */
-void LCD_DrawChar(u16 Startx,u16 Starty,u8 c)
+// TODO: make this draw chars in different orientations
+// TODO: enable transparency for different background colors
+// TODO: Different colors for text
+// TODO: Figure out how to prevent clipping
+void LCD_DrawChar(u16 Startx,u16 Starty,u8 c, u16 foreground, u16 background)
 {
   u16 i,j;
-  //LCD_SetWindow(Startx,Starty,Startx+5,Starty+7 );
-  //LCD_SetCursor(Startx,Starty);
-  //Clr_Cs;
-  //LCD_WriteIndex(0x22);         // GRAM access port
-  //Set_Rs;
+  LCD_SetWindow(Startx,Starty,Startx+FONT_WIDTH-1,Starty+FONT_HEIGHT-1 );
+  LCD_SetCursor(Startx,Starty);
+  Clr_Cs;
+  LCD_WriteIndex(0x22);         // GRAM access port
+  Set_Rs;
   for (i = 0;i < FONT_HEIGHT;i++) {
     for(j = 0; j < FONT_WIDTH; j++) {
       if (smallfont[c-32][j] & (1<<i)) {
-        LCD_SetPoint(Startx+i,Starty+j,LCD_White);
-        //LCD_WriteData(LCD_White);
+        //LCD_SetPoint(Startx+j,Starty+i,LCD_White);
+        LCD_WriteData(foreground);
       } else {
-        LCD_SetPoint(Startx+i,Starty+j,LCD_Black);
-        //LCD_WriteData(LCD_Red);
+        //LCD_SetPoint(Startx+j,Starty+i,LCD_Black);
+        LCD_WriteData(background);
       }
-      //Clr_nWr;Set_nWr;
+      Clr_nWr;Set_nWr;
     }
   }
-  //Set_Cs;
+  Set_Cs;
+
+  LCD_WriteRegister(0x0050,0x0000);
+  LCD_WriteRegister(0x0051,0x00ef);
+  LCD_WriteRegister(0x0052,0x0000);
+  LCD_WriteRegister(0x0053,0x013f);
+
 }
 
-void LCD_DrawString(u16 Startx, u16 Starty, char* s) {
+// this is kinda the same speed as the fast memory setting method.
+void LCD_DrawCharTrans(u16 Startx,u16 Starty,u8 c, u16 foreground)
+{
+  u16 i,j;
+  for (i = 0;i < FONT_HEIGHT;i++) {
+    for(j = 0; j < FONT_WIDTH; j++) {
+      if (smallfont[c-32][j] & (1<<i)) {
+        LCD_SetPoint(Startx+j,Starty+i,foreground);
+      }
+    }
+  }
+
+}
+
+
+// it would be nice to make this nicer for different rotations etc
+// todo: figure out how to disable clipping for non-trans strings
+void LCD_DrawString(u16 Startx, u16 Starty, char* s, u16 foreground,
+		    u16 background, u8 trans) {
   u16 x = Startx;
   u16 y = Starty;
   while (*s != 0) {
-    LCD_DrawChar(y,x,*s);
+    if(trans) {
+      LCD_DrawCharTrans(x,y,*s, foreground);
+    } else {
+      LCD_DrawChar(x,y,*s,foreground,background);
+    }
+
     s++;
     x += FONT_WIDTH;
   }
@@ -296,8 +433,8 @@ void LCD_Test()
   int x,y;
   u16 dat;
 
-  for(x = 58; x >= 50; x--) {
-    for(y = 0; y < 240; y++) {
+  for(x = 100; x >= 50; x--) {
+    for(y = 0; y < 320; y++) {
       dat = LCD_GetPixel(x,y);
       dat = ~dat;
       LCD_SetPoint(x,y,dat);
@@ -401,6 +538,8 @@ u16 LCD_BGR2RGB(u16 color)
   return(rgb);
 }
 
+
+
 /*
  * Name: void LCD_WriteIndex(u16 idx)
  * Function: write register address
@@ -428,11 +567,9 @@ __inline void LCD_WriteIndex(u16 idx)
 void LCD_WriteData(u16 data)
 {
   // assume that cs is already low
-  //GPIOA->ODR = (GPIOA->ODR&0xFF00)|((data&0xFF00)>>8);
   ((uint8_t __IO*)&GPIOA->ODR)[0] = data>>8;
   Clr_nWr;
   Set_nWr;
-  //GPIOA->ODR = (GPIOA->ODR&0xFF00)|(data&0x00FF);
   ((uint8_t __IO*)&GPIOA->ODR)[0] = data;
 
   // have to raise cs later
@@ -481,10 +618,12 @@ __inline u16 LCD_ReadData(void)
   // need to make this faster somehow...
   u16 temp;
   GPIOA->CRL = (GPIOA->CRL & 0x00000000) | 0x44444444; // set data
-						       // pins as
-						       // input
+                                                       // pins as
+                                                       // input
   Clr_nRd;
-  // apparently we need the nops otherwise the data dies.
+  // leave the nops so that the LCD has a chance to actually write
+  // before we read. Otherwise we get junk.
+  // min 4 for 72MHz
   __asm__("nop");
   __asm__("nop");
   __asm__("nop");
@@ -510,8 +649,8 @@ __inline u16 LCD_ReadData(void)
   Output: pixel data
   Call: x = LCD_GetPixel(0,0);
   Note: This is actually REALLY slow compared to other lcd
-        methods. Please do not overuse it.
- */
+  methods. Please do not overuse it.
+*/
 u16 LCD_GetPixel(u16 x, u16 y) {
   u16 dat;
   // dummy read (copy of LCD_Register with some changes)
@@ -638,7 +777,7 @@ void LCD_SetOrientation(LCD_OrientationMode_t m)
       em = 0x1010;
       break;
     case LCD_LANDSCAPE_TOP_DOWN:
-      em = 0x1018;
+      em = 0x1028;
       break;
     case LCD_LANDSCAPE_BOTTOM_UP:
       em = 0x1008;
