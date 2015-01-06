@@ -94,11 +94,11 @@ void LCD_FillRect(u16 Startx, u16 Starty, u16 Endx, u16 Endy, u16 Color);
 void LCD_DrawLine(u16 Startx, u16 Starty, u16 Endx, u16 Endy, u16 Color);
 void LCD_Delay(u32 nCount);
 void LCD_Test(void);
-void LCD_WriteData(u16 data);
-void LCD_WriteIndex(u16 idx);
+void LCD_WriteData(u16 data) __attribute((always_inline));
+void LCD_WriteIndex(u16 idx) __attribute((always_inline));
 void LCD_Backlight(u16 status);
-void LCD_WR_Start(void);
-void LCD_WR_End(void);
+void LCD_WR_Start(void) __attribute((always_inline));
+void LCD_WR_End(void) __attribute((always_inline));
 
 u16 LCD_BGR2RGB(u16 color);
 u16 LCD_ReadData(void);

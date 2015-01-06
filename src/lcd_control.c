@@ -179,6 +179,21 @@ __inline void LCD_SetCursor(u16 x,u16 y)
  */
 __inline void LCD_SetWindow(u16 Startx,u16 Starty,u16 Endx,u16 Endy)
 {
+
+  int temp;
+  // check some sanity
+  if(Endy < Starty) {
+    temp = Starty;
+    Starty = Endy;
+    Endy = temp;
+  }
+
+  if(Endx < Startx) {
+    temp = Startx;
+    Startx = Endy;
+    Endy = temp;
+  }
+
 #if LCD_ORIENTATION == LCD_LANDSCAPE
   LCD_WriteRegister(0x50,Starty);
   LCD_WriteRegister(0x52,Startx);
@@ -361,19 +376,23 @@ void LCD_DrawPicture(u16 Startx,u16 Starty,u16 Endx,u16 Endy,u16 *pic)
 // TODO: Figure out how to prevent clipping
 void LCD_DrawChar(u16 Startx,u16 Starty,u8 c, u16 foreground, u16 background)
 {
+  if(Startx > 240 || Starty > 320) {
+    return;
+  }
+
   u16 i,j;
-  LCD_SetWindow(Startx,Starty,Startx+FONT_WIDTH-1,Starty+FONT_HEIGHT-1 );
+  u16 width = Startx+FONT_WIDTH > LCD_WIDTH ? LCD_WIDTH-Startx : FONT_WIDTH;
+  u16 height = Starty+FONT_HEIGHT > LCD_HEIGHT ? LCD_HEIGHT-Starty : FONT_HEIGHT;
+  LCD_SetWindow(Startx,Starty,Startx+width-1,Starty+height-1 );
   LCD_SetCursor(Startx,Starty);
   Clr_Cs;
   LCD_WriteIndex(0x22);         // GRAM access port
   Set_Rs;
-  for (i = 0;i < FONT_HEIGHT;i++) {
-    for(j = 0; j < FONT_WIDTH; j++) {
+  for (i = 0;i < height;i++) {
+    for(j = 0; j < width; j++) {
       if (smallfont[c-32][j] & (1<<i)) {
-        //LCD_SetPoint(Startx+j,Starty+i,LCD_White);
         LCD_WriteData(foreground);
       } else {
-        //LCD_SetPoint(Startx+j,Starty+i,LCD_Black);
         LCD_WriteData(background);
       }
       Clr_nWr;Set_nWr;
@@ -392,8 +411,8 @@ void LCD_DrawChar(u16 Startx,u16 Starty,u8 c, u16 foreground, u16 background)
 void LCD_DrawCharTrans(u16 Startx,u16 Starty,u8 c, u16 foreground)
 {
   u16 i,j;
-  for (i = 0;i < FONT_HEIGHT;i++) {
-    for(j = 0; j < FONT_WIDTH; j++) {
+  for (i = FONT_HEIGHT;i != 0;i--) {
+    for(j = FONT_WIDTH; j != 0; j--) {
       if (smallfont[c-32][j] & (1<<i)) {
         LCD_SetPoint(Startx+j,Starty+i,foreground);
       }
@@ -564,7 +583,7 @@ __inline void LCD_WriteIndex(u16 idx)
  * Output: none
  * Call: LCD_WriteData(0x0000);
  */
-void LCD_WriteData(u16 data)
+inline void LCD_WriteData(u16 data)
 {
   // assume that cs is already low
   ((uint8_t __IO*)&GPIOA->ODR)[0] = data>>8;
@@ -582,7 +601,7 @@ void LCD_WriteData(u16 data)
  * Output: none
  * Call: LCD_WR_Start();
  */
-void LCD_WR_Start(void)
+inline void LCD_WR_Start(void)
 {
 
   Clr_Cs;
@@ -601,7 +620,7 @@ void LCD_WR_Start(void)
  * Output: none
  * Call: LCD_WR_End();
  */
-void LCD_WR_End(void)
+inline void LCD_WR_End(void)
 {
   Set_Cs;
 }
