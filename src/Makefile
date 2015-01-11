@@ -4,6 +4,9 @@ OBJS+=startup.o
 OBJS+=main.o
 OBJS+=lcd_control.o
 OBJS+=timer.o
+OBJS+=usart.o
+OBJS+=json.o
+
 
 all: src
 

@@ -1,6 +1,8 @@
 #ifndef __LCD_CONTROLLER_H__
 #define __LCD_CONTROLLER_H__
 
+#define uint16_t unsigned int
+
 #define Set_Cs GPIOB->BSRR = (1<<9);
 #define Clr_Cs GPIOB->BRR = (1<<9);
 
@@ -18,6 +20,11 @@
 
 #define LCD_Light_On GPIOD->BSRR = (1<<5);
 #define LCD_Light_Off GPIOD->BRR = (1<<5);
+
+#define u16 unsigned int
+#define u8 unsigned char
+#define u32 unsigned long int
+
 
 
 /* LCD colors */
@@ -41,7 +48,7 @@
 #define LCD_Yellow                              0xFFE0
 
 // convert 888 to 565
-#define RGB_conv(r,g,b) (((r)>>3)<<11)|(((g)>>2)<<5)|(((b)>>3)&0x1F)
+#define RGB_conv(r,g,b) ((((r) & 0xf8) << 8) | (((g) & 0xfc) << 3) | (((b) & 0xf8) >> 3 ))
 
 
 typedef enum {
@@ -82,15 +89,23 @@ void LCD_Configuration(void);
 void LCD_Initialization(void);
 void LCD_Reset(void);
 void LCD_WriteRegister(u16 index,u16 data);
-void LCD_SetCursor(u16 x,u16 y);
+inline void LCD_SetCursor(u16 x,u16 y);
 void LCD_SetWindow(u16 Startx,u16 Starty,u16 Endx,u16 Endy);
-void LCD_DrawPicture(u16 Startx,u16 Starty,u16 Endx,u16 Endy,u16 *pic);
+void LCD_DrawPicture1bpp(u16 Startx,u16 Starty,u16 Endx,u16 Endy,
+			 u8 *pic, u16 foreground, u16 background);
+void LCD_DrawPicture4bpp(u16 Startx,u16 Starty,u16 Endx,u16 Endy,
+			 u8 *pic);
+void LCD_DrawPicture8bpp(u16 Startx,u16 Starty,u16 Endx,u16 Endy,
+			 u8 *pic);
+void LCD_DrawPicture16bpp(u16 Startx,u16 Starty,u16 Endx,u16 Endy,
+			 u16 *pic);
 void LCD_DrawChar(u16 Startx,u16 Starty,u8 c, u16 foreground, u16 background);
 void LCD_DrawString(u16 Startx, u16 Starty, char* s, u16 foreground,
 		      u16 background, u8 trans);
 void LCD_SetPoint(u16 x,u16 y,u16 Color);
 void LCD_Clear(u16 Color);
 void LCD_FillRect(u16 Startx, u16 Starty, u16 Endx, u16 Endy, u16 Color);
+void LCD_DrawRect(u16 Startx, u16 Starty, u16 Endx, u16 Endy, u16 Color);
 void LCD_DrawLine(u16 Startx, u16 Starty, u16 Endx, u16 Endy, u16 Color);
 void LCD_Delay(u32 nCount);
 void LCD_Test(void);
@@ -104,12 +119,6 @@ u16 LCD_BGR2RGB(u16 color);
 u16 LCD_ReadData(void);
 u16 LCD_ReadRegister(u16 index);
 u16 LCD_GetPixel(u16 x, u16 y);
-
-static __INLINE uint16_t LCD_RGB2Pixel565(uint8_t r,uint8_t g,uint8_t b)
-{
-  /* RGB2PIXEL565 from a macro in Greg Haerr's Nano-X, MPL license */
-  return ((((r) & 0xf8) << 8) | (((g) & 0xfc) << 3) | (((b) & 0xf8) >> 3 ));
-}
 
 void LCD_SetOrientation(LCD_OrientationMode_t m);
 LCD_OrientationMode_t LCD_GetOrientation(void);

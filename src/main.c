@@ -19,8 +19,10 @@
 #include "lcd_control.h"
 #include "timer.h"
 
-#include <string.h>
+#include "jsmn.h"
+#include "json.h"
 
+#include <string.h>
 
 void clock_init(){
   ErrorStatus HSEStartUpStatus;
@@ -56,53 +58,28 @@ void clock_init(){
       while(RCC_GetSYSCLKSource() != 0x08);
       /* Wait till PLL is used as system clock source */
     }
-
 }
-
-void delay() {
-  u16 a,b,c;
-  for(; a < 65000; a++) {
-    for(; b < 65000; b++) {
-      for(; c < 65000; c++) {
-        __asm__("nop");
-        __asm__("nop");
-        __asm__("nop");
-        __asm__("nop");
-      }
-    }
-  }
-}
-
 
 int main(int argc, char *argv[])
 {
-  int cnt = 0;
-  /* int max, maxi; */
 
-  /* float fft[FFT_LEN]; */
-  /* float avgfft[FFT_LEN]; */
-  /* char buf[32]; */
+
+
   LCD_Configuration();
   LCD_Initialization();
   clock_init();
-  LCD_Clear(LCD_Red);
+
   TIM_init();
+
+  JSON_init();
   LCD_Clear(LCD_Black);
+
+
+
 
   while(1) {
     while(!TIM_GetITStatus(TIM2,TIM_IT_Update) != RESET);
     TIM_ClearITPendingBit(TIM2,TIM_IT_Update);
-    LCD_DrawLine(cnt%240,cnt%240,0,cnt%320,LCD_Black);
-    LCD_DrawLine(0,cnt%240,cnt%320,cnt%320,LCD_Black);
-    LCD_DrawLine(0,cnt%240,0,cnt%320,LCD_Black);
-    LCD_DrawString(cnt%240,cnt%320,"Hello World!\0",LCD_Black,0,0);
-
-    cnt++;
-
-    LCD_DrawLine(cnt%240,cnt%240,0,cnt%320,LCD_Yellow);
-    LCD_DrawLine(0,cnt%240,cnt%320,cnt%320,LCD_Yellow);
-    LCD_DrawLine(0,cnt%240,0,cnt%320,LCD_Yellow);
-    LCD_DrawString(cnt%240,cnt%320,"Hello World!\0",LCD_Yellow,0,0);
-
+    JSON_render();
   }
 }

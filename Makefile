@@ -3,6 +3,7 @@ LDFLAGS=$(COMMONFLAGS) -fno-exceptions -ffunction-sections -fdata-sections -L$(L
 
 LDLIBS+=-lm
 LDLIBS+=-lstm32
+LDLIBS+=-ljsmn
 
 STARTUP=startup.c
 all: libs src

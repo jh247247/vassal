@@ -1,5 +1,6 @@
 include ../Makefile.common
 LIBS+=libstm32.a
+LIBS+=libjsmn.a
 CFLAGS+=-c
 
 all: libs
@@ -27,6 +28,12 @@ libstm32.a:
 		$(STMLIB)/STM32F10x_StdPeriph_Driver/src/*.o
 	@echo "done."
 
+libjsmn.a:
+	@echo -n "Building $@..."
+	@cd jsmn && make
+	@echo "done."
+
+
 PHONY:libs clean
 
 clean:
@@ -34,5 +41,3 @@ clean:
 	rm -f $(STMLIB)/CMSIS/CM3/CoreSupport/core_cm3.o
 	rm -f $(STMLIB)/CMSIS/CM3/DeviceSupport/ST/STM32F10x/system_stm32f10x.o
 	rm -f $(LIBS)
-
-

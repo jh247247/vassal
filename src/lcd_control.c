@@ -7,9 +7,7 @@
  * you as much as they have helped me.
  */
 
-// TODO: line drawing methods
 // TODO: other basic graphics methods
-// TODO: general optimizations I guess
 // TODO: handle dynamic lcd orientation
 
 #include "stm32f10x.h"
@@ -50,7 +48,6 @@ void LCD_Configuration(void)
 
   GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5;
   GPIO_Init(GPIOD,&GPIO_InitStructure);
-
 
 }
 
@@ -94,24 +91,24 @@ void LCD_Initialization()
   LCD_WriteRegister(0x0011,0x0007);
   LCD_WriteRegister(0x0012,0x0000);
   LCD_WriteRegister(0x0013,0x0000);
-  for (i = 50000;i > 0;i--);
-  for (i = 50000;i > 0;i--);
+  for (i = 50000;i > 0;i--) __asm__("nop");
+  for (i = 50000;i > 0;i--) __asm__("nop");
   LCD_WriteRegister(0x0010,0x1590);
   LCD_WriteRegister(0x0011,0x0227);
-  for (i = 50000;i > 0;i--);
-  for (i = 50000;i > 0;i--);
+  for (i = 50000;i > 0;i--) __asm__("nop");
+  for (i = 50000;i > 0;i--) __asm__("nop");
   LCD_WriteRegister(0x0012,0x009c);
-  for (i = 50000;i > 0;i--);
-  for (i = 50000;i > 0;i--);
+  for (i = 50000;i > 0;i--) __asm__("nop");
+  for (i = 50000;i > 0;i--) __asm__("nop");
   LCD_WriteRegister(0x0013,0x1900);
   LCD_WriteRegister(0x0029,0x0023);
   LCD_WriteRegister(0x002b,0x000E);
-  for (i = 50000;i > 0;i--);
-  for (i = 50000;i > 0;i--);
+  for (i = 50000;i > 0;i--) __asm__("nop");
+  for (i = 50000;i > 0;i--) __asm__("nop");
   LCD_WriteRegister(0x0020,0x0000);
   LCD_WriteRegister(0x0021,0x0000);
-  for (i = 50000;i > 0;i--);
-  for (i = 50000;i > 0;i--);
+  for (i = 50000;i > 0;i--) __asm__("nop");
+  for (i = 50000;i > 0;i--) __asm__("nop");
   LCD_WriteRegister(0x0030,0x0007);
   LCD_WriteRegister(0x0031,0x0707);
   LCD_WriteRegister(0x0032,0x0006);
@@ -122,8 +119,8 @@ void LCD_Initialization()
   LCD_WriteRegister(0x0039,0x0706);
   LCD_WriteRegister(0x003c,0x0701);
   LCD_WriteRegister(0x003d,0x000f);
-  for (i = 50000;i > 0;i--);
-  for (i = 50000;i > 0;i--);
+  for (i = 50000;i > 0;i--) __asm__("nop");
+  for (i = 50000;i > 0;i--) __asm__("nop");
   LCD_WriteRegister(0x0050,0x0000);
   LCD_WriteRegister(0x0051,0x00ef);
   LCD_WriteRegister(0x0052,0x0000);
@@ -159,7 +156,7 @@ void LCD_Initialization()
  * Output: none
  * Call: LCD_SetCursor(50,50);
  */
-__inline void LCD_SetCursor(u16 x,u16 y)
+inline void LCD_SetCursor(u16 x,u16 y)
 {
 #if LCD_ORIENTATION == LCD_LANDSCAPE
   LCD_WriteRegister(0x20,y);
@@ -242,7 +239,7 @@ void LCD_FillRect(u16 Startx, u16 Starty, u16 Endx, u16 Endy, u16 Color)
   Clr_Cs;
   LCD_WriteIndex(0x22);         // GRAM access port
   Set_Rs;
-  for (i=(Endx-Startx)*(Endy-Starty);i > 0;i--)
+  for (i=(Endx-Startx+1)*(Endy-Starty);i > 0;i--)
     {
       LCD_WriteData(Color);
       Clr_nWr;
@@ -258,6 +255,8 @@ void LCD_FillRect(u16 Startx, u16 Starty, u16 Endx, u16 Endy, u16 Color)
 }
 
 
+
+// todo: handle rendering off the screen
 void LCD_HorizontalLine(u16 Startx, u16 Endx, u16 y, u16 Color){
   u16 i;
   LCD_SetCursor(Startx,y);
@@ -273,6 +272,7 @@ void LCD_HorizontalLine(u16 Startx, u16 Endx, u16 y, u16 Color){
   Set_Cs;
 }
 
+// todo: handle rendering off the screen
 void LCD_VerticalLine(u16 x, u16 Starty, u16 Endy, u16 Color){
 
   u16 i;
@@ -290,6 +290,15 @@ void LCD_VerticalLine(u16 x, u16 Starty, u16 Endy, u16 Color){
     }
   Set_Cs;
   LCD_WriteRegister(0x03,oldAM);
+}
+
+void LCD_DrawRect(u16 Startx, u16 Starty, u16 Endx, u16 Endy, u16 Color)
+{
+  // everything is optimized internally.
+  LCD_HorizontalLine(Startx,Endx,Starty,Color);
+  LCD_HorizontalLine(Startx,Endx,Endy,Color);
+  LCD_VerticalLine(Startx,Starty,Endy,Color);
+  LCD_VerticalLine(Endx,Starty,Endy,Color);
 }
 
 
@@ -349,26 +358,101 @@ void LCD_SetPoint(u16 x,u16 y,u16 Color)
   LCD_WR_End();
 }
 
-/*
- * Name: void LCD_DrawPicture(u16 Startx,u16 Starty,u16 Endx,u16 Endy,u16 *pic)
- * Function: display a picture
- * Input: starting/ending x,y-positions, picture head pointer
- * Output: none
- * Call: LCD_DrawPicture(0,0,100,100,(u16*) demo);
- */
-void LCD_DrawPicture(u16 Startx,u16 Starty,u16 Endx,u16 Endy,u16 *pic)
+void LCD_DrawPicture1bpp(u16 Startx,u16 Starty,u16 Endx,u16 Endy,
+                         u8 *pic, u16 foreground, u16 background)
 {
-  u16 i;
+  u32 i;
+  u8 shift;
+  u32 index;
   LCD_SetWindow(Startx,Starty,Endx,Endy);
   LCD_SetCursor(Startx,Starty);
-  LCD_WR_Start();
-  for (i = 0;i < (Endx * Endy);i++)
+  Clr_Cs;
+  LCD_WriteIndex(0x22);         // GRAM access port
+  Set_Rs;
+  for (i=0;i < (Endx-Startx)*(Endy-Starty);i++)
     {
-      LCD_WriteData(*pic++);
-      Clr_nWr;Set_nWr;
+      shift = i&0x07;
+      index = i&0xFFFFFF80;
+      LCD_WriteData(*(pic+index)&(1<<shift) ? foreground : background);
+      Clr_nWr;
+      Set_nWr;
     }
-  LCD_WR_End();
+
+  Set_Cs;
+
+  LCD_WriteRegister(0x0050,0x0000);
+  LCD_WriteRegister(0x0051,0x00ef);
+  LCD_WriteRegister(0x0052,0x0000);
+  LCD_WriteRegister(0x0053,0x013f);
 }
+
+// I can't see myself using these anytime soon, so I'll just leave
+// these here instead. Watching, waiting.
+/* void LCD_DrawPicture4bpp(u16 Startx,u16 Starty,u16 Endx,u16 Endy, */
+/*                          u8 *pic) */
+/* { */
+/*   u32 cond = (Endx-Startx)*(Endy-Starty); */
+/*   LCD_SetWindow(Startx,Starty,Endx,Endy); */
+/*   LCD_SetCursor(Startx,Starty); */
+/*   Clr_Cs; */
+/*   LCD_WriteIndex(0x22);         // GRAM access port */
+/*   Set_Rs; */
+/*   while(cond != 0) { */
+/*     LCD_WriteData(GFX_121_TO_565(*pic>>4)); Clr_nWr; Set_nWr; */
+/*     LCD_WriteData(GFX_121_TO_565(*pic&0xFF)); Clr_nWr; Set_nWr; */
+/*     pic++; */
+/*   } */
+
+/*   Set_Cs; */
+
+/*   LCD_WriteRegister(0x0050,0x0000); */
+/*   LCD_WriteRegister(0x0051,0x00ef); */
+/*   LCD_WriteRegister(0x0052,0x0000); */
+/*   LCD_WriteRegister(0x0053,0x013f); */
+/* } */
+
+/* void LCD_DrawPicture8bpp(u16 Startx,u16 Starty,u16 Endx,u16 Endy, */
+/*                          u8 *pic) */
+/* { */
+/*   u32 cond = (Endx-Startx)*(Endy-Starty); */
+/*   LCD_SetWindow(Startx,Starty,Endx,Endy); */
+/*   LCD_SetCursor(Startx,Starty); */
+/*   Clr_Cs; */
+/*   LCD_WriteIndex(0x22);         // GRAM access port */
+/*   Set_Rs; */
+/*   while(cond != 0) { */
+/*     LCD_WriteData(GFX_332_TO_565(*pic)); Clr_nWr; Set_nWr; */
+/*   } */
+
+/*   Set_Cs; */
+
+/*   LCD_WriteRegister(0x0050,0x0000); */
+/*   LCD_WriteRegister(0x0051,0x00ef); */
+/*   LCD_WriteRegister(0x0052,0x0000); */
+/*   LCD_WriteRegister(0x0053,0x013f); */
+/* } */
+
+void LCD_DrawPicture16bpp(u16 Startx,u16 Starty,u16 Endx,u16 Endy,
+                         u16 *pic)
+{
+  u32 cond = (Endx-Startx)*(Endy-Starty);
+  LCD_SetWindow(Startx,Starty,Endx,Endy);
+  LCD_SetCursor(Startx,Starty);
+  Clr_Cs;
+  LCD_WriteIndex(0x22);         // GRAM access port
+  Set_Rs;
+  while(cond != 0) {
+    LCD_WriteData(*pic); Clr_nWr; Set_nWr;
+  }
+
+  Set_Cs;
+
+  LCD_WriteRegister(0x0050,0x0000);
+  LCD_WriteRegister(0x0051,0x00ef);
+  LCD_WriteRegister(0x0052,0x0000);
+  LCD_WriteRegister(0x0053,0x013f);
+}
+
 
 // TODO: make this draw chars in different orientations
 // TODO: enable transparency for different background colors
@@ -425,7 +509,7 @@ void LCD_DrawCharTrans(u16 Startx,u16 Starty,u8 c, u16 foreground)
 // it would be nice to make this nicer for different rotations etc
 // todo: figure out how to disable clipping for non-trans strings
 void LCD_DrawString(u16 Startx, u16 Starty, char* s, u16 foreground,
-		    u16 background, u8 trans) {
+                    u16 background, u8 trans) {
   u16 x = Startx;
   u16 y = Starty;
   while (*s != 0) {
