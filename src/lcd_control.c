@@ -508,11 +508,11 @@ void LCD_DrawCharTrans(u16 Startx,u16 Starty,u8 c, u16 foreground)
 
 // it would be nice to make this nicer for different rotations etc
 // todo: figure out how to disable clipping for non-trans strings
-void LCD_DrawString(u16 Startx, u16 Starty, char* s, u16 foreground,
-                    u16 background, u8 trans) {
+void LCD_DrawString(u16 Startx, u16 Starty, u16 foreground,
+                    u16 background, u8 trans, const char* s) {
   u16 x = Startx;
   u16 y = Starty;
-  while (*s != 0) {
+  while (*s != '\0' && *s != '\n') {
     if(trans) {
       LCD_DrawCharTrans(x,y,*s, foreground);
     } else {

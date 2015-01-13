@@ -11,6 +11,7 @@ char g_jsonInBuf[1000] =
   "{\"l\": \"0,100,0,100,65535\n"
   "0,240,100,100,1000\n"
   "240,140,0,100,10000\n\"}"
+  "\"s\": \"200,100,65535,0,0,test\n\""
   "\"f\": \"100,150,100,150,60000\n\""
   "\"r\": \"100,150,100,150,6000\n\"}\0";
 
@@ -37,16 +38,11 @@ int atoi(const char* endptr) {
   return retval;
 }
 
-static int jsoneq(const char *json, jsmntok_t *tok, const char *s) {
-  if (tok->type == JSMN_STRING && (int) strlen(s) == tok->end - tok->start &&
-      strncmp(json + tok->start, s, tok->end - tok->start) == 0) {
-    return 0;
-  }
-  return -1;
-}
 
 
+// TODO: make this safer for more args
 // Draw the line described by the given string
+// args are x0, x1, y0, y1, color
 const char* JSON_evalLine(const char* ptr) {
   // should be endptrs for the atoi func.
   const char* data[4] = {NULL};
@@ -58,6 +54,10 @@ const char* JSON_evalLine(const char* ptr) {
     }
     ptr++;
   } while(*ptr != '\n');
+  if(i != 4) {
+    // how do I recover? do all the other elements die?
+    return ptr; // error! too few args
+  } // todo: too many args
   LCD_DrawLine(atoi(data[0]),
                atoi(data[1]),
                atoi(data[2]),
@@ -66,6 +66,8 @@ const char* JSON_evalLine(const char* ptr) {
   return ptr;
 }
 
+// TODO: make this safer for more args
+// args are x0, x1, y0, y1, color
 const char* JSON_evalRect(const char* ptr) {
   const char* data[4] = {NULL};
   int i = 0;
@@ -76,6 +78,10 @@ const char* JSON_evalRect(const char* ptr) {
     }
     ptr++;
   } while(*ptr != '\n');
+  if(i != 4) {
+    // how do I recover? do all the other elements die?
+    return ptr; // error!
+  } // todo: too many ags
   LCD_DrawRect(atoi(data[0]),
                atoi(data[2]),
                atoi(data[1]),
@@ -84,6 +90,9 @@ const char* JSON_evalRect(const char* ptr) {
   return ptr;
 }
 
+
+// TODO: make this safer for more args
+// args are x0, x1, y0, y1, color
 const char* JSON_evalFilledRect(const char* ptr) {
   const char* data[4] = {NULL};
   int i = 0;
@@ -94,6 +103,10 @@ const char* JSON_evalFilledRect(const char* ptr) {
     }
     ptr++;
   } while(*ptr != '\n');
+  if(i != 4) {
+    // how do I recover? do all the other elements die?
+    return ptr; // error!
+  } // todo: too many args
   LCD_FillRect(atoi(data[0]),
                atoi(data[2]),
                atoi(data[1]),
@@ -102,9 +115,32 @@ const char* JSON_evalFilledRect(const char* ptr) {
   return ptr;
 }
 
+// TODO: make this safer for more args
+// args are x, y, background_color,
+// foreground_color, transparent_flag, string
+const char* JSON_evalString(const char* ptr) {
+  const char* data[5] = {NULL};
+  int i = 0;
+  do {
+    if(*ptr == ',') {
+      data[i] = (ptr-1);
+      i++;
+    }
+    ptr++;
+  } while(i != 5 && *ptr != '\n');
 
+
+  LCD_DrawString(atoi(data[1]),
+                 atoi(data[0]),
+                 atoi(data[2]),
+                 atoi(data[3]),
+                 atoi(data[4]),
+                 ptr);
+  return ptr;
+}
 
 void JSON_render() {
+  char c;
   int i;
   // parse the input
   int r = jsmn_parse(&g_parser, g_jsonInBuf, g_jsonLen, g_tokens,
@@ -126,30 +162,47 @@ void JSON_render() {
         // iunno.
         continue;
       }
+
+      c = *(g_jsonInBuf+g_tokens[i].start);
+
       // only need to check first char of type to determine type
       // this means that you can ensure the drawing order of things on
       // the screen. Handy.
       ptr = g_jsonInBuf+g_tokens[i+1].start;
-      if(jsoneq(g_jsonInBuf, &g_tokens[i], "l") == 0){
+      switch(c) {
+      case 'l':
         do{
           ptr = JSON_evalLine(ptr);
         } while(*(ptr+1) != '\"');
-      }
+        break;
 
-      if(jsoneq(g_jsonInBuf, &g_tokens[i], "r") == 0){
+      case 'r':
         do{
           ptr = JSON_evalRect(ptr);
         } while(*(ptr+1) != '\"');
-      }
+        break;
 
-      if(jsoneq(g_jsonInBuf, &g_tokens[i], "f") == 0){
+      case 'f':
         do{
           ptr = JSON_evalFilledRect(ptr);
         } while(*(ptr+1) != '\"');
-      }
+        break;
 
+      case 's':
+        do{
+          ptr = JSON_evalString(ptr);
+        } while(*(ptr+1) != '\"');
+        break;
+      case 'b':
+        break;
+      case 'c':
+        break;
+      default:
+        break;
+      }
+      // b -> bitmap base64 encoding
+      // c -> color bitmap
 
     }
-
   }
 }
