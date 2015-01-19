@@ -17,7 +17,7 @@ int TIM_init(){
   TIM_TimeBaseInitTypeDef timerInitStructure;
   timerInitStructure.TIM_Prescaler = 24000;
   timerInitStructure.TIM_CounterMode = TIM_CounterMode_Up;
-  timerInitStructure.TIM_Period = 50;
+  timerInitStructure.TIM_Period = 100; // approx every ms
   timerInitStructure.TIM_ClockDivision = TIM_CKD_DIV1;
   timerInitStructure.TIM_RepetitionCounter = 0;
   TIM_TimeBaseInit(TIM2, &timerInitStructure);
@@ -25,4 +25,16 @@ int TIM_init(){
   TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);
 
   return 0;
+}
+
+volatile unsigned int g_sysTick;
+
+
+
+void TIM2_IRQHandler()
+{
+  if (TIM_GetITStatus(TIM2, TIM_IT_Update) != RESET)
+    {
+      TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
+    }
 }

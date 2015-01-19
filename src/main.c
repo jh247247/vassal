@@ -16,11 +16,13 @@
 #include "misc.h"
 #include "math.h"
 
+
 #include "lcd_control.h"
 #include "timer.h"
 
 #include "jsmn.h"
 #include "json.h"
+#include "usart.h"
 
 #include <string.h>
 
@@ -60,26 +62,63 @@ void clock_init(){
     }
 }
 
+extern char g_jsonInBuf[8192*2];
+extern unsigned int g_jsonLen;
+
 int main(int argc, char *argv[])
 {
-
-
-
+  char* ptr;
+  int r;
   LCD_Configuration();
   LCD_Initialization();
   clock_init();
 
   TIM_init();
+  USART1_Init();
 
   JSON_init();
   LCD_Clear(LCD_Black);
-
-
-
+  ptr = g_jsonInBuf;
 
   while(1) {
-    while(!TIM_GetITStatus(TIM2,TIM_IT_Update) != RESET);
-    TIM_ClearITPendingBit(TIM2,TIM_IT_Update);
-    JSON_render();
+    //while(!TIM_GetITStatus(TIM2,TIM_IT_Update) != RESET);
+    //TIM_ClearITPendingBit(TIM2,TIM_IT_Update);
+
+
+    if(USART_GetFlagStatus(USART1, USART_IT_RXNE) != RESET) {
+      *(ptr+g_jsonLen) = USART_ReceiveData(USART1);
+
+      // make sure that the start of the packet is an object brace.
+      if(g_jsonLen == 0 &&
+         *(ptr+g_jsonLen) != '{') {
+        continue;
+      }
+
+      // check for end of string
+      if(*(ptr+g_jsonLen) == '\0') {
+        g_jsonLen++; // have to include null char
+        r = JSON_render();
+
+	// todo: better error reporting
+        if(r == 1) {
+          USART1_PutString("Error: 1!\n");
+        } else if(r == 2){
+          USART1_PutString("Error: 2!\n");
+        } else if(r == -1){
+          USART1_PutString("Error: JSMN_NOMEM!\n");
+        } else if(r == -2){
+          USART1_PutString("Error: JSMN_INVAL!\n");
+        } else if(r == -3){
+          USART1_PutString("Error: JSMN_ERROR_PART!\n");
+        }
+
+        g_jsonLen = 0; // reset for next command
+      } else {
+        g_jsonLen++;
+      }
+
+
+
+    }
   }
 }

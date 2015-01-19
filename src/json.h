@@ -2,7 +2,7 @@
 #define JSON_H
 
 void JSON_init();
-void JSON_render();
+int JSON_render();
 
 
 #endif /* JSON_H */

@@ -6,25 +6,23 @@
 
 
 // getting pretty close to the max ram with just these...
-// make this 16384 for the final export. no alloc.
-char g_jsonInBuf[1000] =
-  "{\"l\": \"0,100,0,100,65535\n"
-  "0,240,100,100,1000\n"
-  "240,140,0,100,10000\n\"}"
-  "\"s\": \"200,100,65535,0,0,test\n\""
-  "\"f\": \"100,150,100,150,60000\n\""
-  "\"r\": \"100,150,100,150,6000\n\"}\0";
+// double buffer things so we can render and grab data at the same time.
+char g_jsonInBuf[8192*2];
+  /* "{\"l\": \"0,100,0,100,65535\n" */
+  /* "0,240,100,100,1000\n" */
+  /* "240,140,0,100,10000\n\"}" */
+  /* "\"s\": \"200,100,65535,0,0,test\n\"" */
+  /* "\"f\": \"100,150,100,150,60000\n\"" */
+  /* "\"r\": \"100,150,100,150,6000\n\"}\0"; */
 
 unsigned int g_jsonLen;
 
-jsmn_parser g_parser;
 jsmntok_t g_tokens[128]; // cant really have more than 128 kinds of
                          // elements on the screen right?
 
 
 void JSON_init() {
-  jsmn_init(&g_parser);
-  g_jsonLen = strlen(g_jsonInBuf);
+  g_jsonLen = 0;
 }
 
 int atoi(const char* endptr) {
@@ -55,7 +53,7 @@ const char* JSON_evalLine(const char* ptr) {
     ptr++;
   } while(*ptr != '\n');
   if(i != 4) {
-    // how do I recover? do all the other elements die?
+    // how do I reconver? do all the other elements die?
     return ptr; // error! too few args
   } // todo: too many args
   LCD_DrawLine(atoi(data[0]),
@@ -139,36 +137,59 @@ const char* JSON_evalString(const char* ptr) {
   return ptr;
 }
 
-void JSON_render() {
+const char* JSON_evalClear(const char* ptr) {
+  do {
+    ptr++;
+  } while(*ptr != '\"');
+
+  // only refresh the last one, since clearing multiple times is kinda
+  // useless.
+  // optimization idea: ffw to a clear since things before don't matter.
+  LCD_Clear(atoi(ptr-1));
+  return ptr;
+}
+
+int JSON_render() {
   char c;
   int i;
   // parse the input
-  int r = jsmn_parse(&g_parser, g_jsonInBuf, g_jsonLen, g_tokens,
+  jsmn_parser p;
+  char* buf = g_jsonInBuf;
+  jsmntok_t* t = g_tokens;
+  int len = g_jsonLen;
+
+  jsmn_init(&p);
+  int r = jsmn_parse(&p, buf, len, g_tokens,
                      sizeof(g_tokens)/sizeof(g_tokens[0]));
   const char* ptr;
 
   if (r < 0) {
-    return;
+    // invalid, do not render
+    return r;
+  }
+
+  if (r < 1){
+    return 1;
   }
 
   /* Assume the top-level element is an object */
-  if (r < 1 || g_tokens[0].type != JSMN_OBJECT) {
-    return;
+  if(t[0].type != JSMN_OBJECT) {
+    return 2;
   }
 
   for(i = 1; i < r; i++) {
-    if(g_tokens[i].type == JSMN_STRING) {
-      if(g_tokens[i+1].type != JSMN_STRING){
+    if(t[i].type == JSMN_STRING) {
+      if(t[i+1].type != JSMN_STRING){
         // iunno.
         continue;
       }
 
-      c = *(g_jsonInBuf+g_tokens[i].start);
+      c = *(buf+t[i].start);
 
       // only need to check first char of type to determine type
       // this means that you can ensure the drawing order of things on
       // the screen. Handy.
-      ptr = g_jsonInBuf+g_tokens[i+1].start;
+      ptr = buf+t[i+1].start;
       switch(c) {
       case 'l':
         do{
@@ -193,16 +214,16 @@ void JSON_render() {
           ptr = JSON_evalString(ptr);
         } while(*(ptr+1) != '\"');
         break;
-      case 'b':
+      case 'b': // b -> bitmap base64 encoding (1bpp)
         break;
-      case 'c':
+      case 'c': // c -> color bitmap (16bpp)
         break;
+      case 'C': // clear screen
+	ptr = JSON_evalClear(ptr);
       default:
         break;
       }
-      // b -> bitmap base64 encoding
-      // c -> color bitmap
-
     }
   }
+  return 0;
 }
