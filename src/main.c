@@ -80,6 +80,8 @@ int main(int argc, char *argv[])
   LCD_Clear(LCD_Black);
   ptr = g_jsonInBuf;
 
+  USART1_PutString("***** INIT DONE *****\n");
+
   while(1) {
     //while(!TIM_GetITStatus(TIM2,TIM_IT_Update) != RESET);
     //TIM_ClearITPendingBit(TIM2,TIM_IT_Update);
@@ -110,9 +112,11 @@ int main(int argc, char *argv[])
           USART1_PutString("Error: JSMN_INVAL!\n");
         } else if(r == -3){
           USART1_PutString("Error: JSMN_ERROR_PART!\n");
-        }
-
+        } else if(r != 0){
+	  USART1_PutString("Error: GENERAL\n");
+	}
         g_jsonLen = 0; // reset for next command
+	USART1_PutString("\nDone!\n");
       } else {
         g_jsonLen++;
       }

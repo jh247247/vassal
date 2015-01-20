@@ -65,7 +65,7 @@ void USART1_PutChar(char ch)
   USART1->DR = ch;
 }
 
-void USART1_PutString(char * str)
+void USART1_PutString(const char * str)
 {
   while(*str != 0)
     {

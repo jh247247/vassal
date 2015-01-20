@@ -512,7 +512,11 @@ void LCD_DrawString(u16 Startx, u16 Starty, u16 foreground,
                     u16 background, u8 trans, const char* s) {
   u16 x = Startx;
   u16 y = Starty;
-  while (*s != '\0' && *s != '\n') {
+  while (*s != '\0' && *s != '\r') {
+    if(*s == '\n'){
+      y += FONT_HEIGHT;
+      continue;
+    }
     if(trans) {
       LCD_DrawCharTrans(x,y,*s, foreground);
     } else {
