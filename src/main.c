@@ -69,11 +69,14 @@ int main(int argc, char *argv[])
 {
   char* ptr;
   int r;
+  __enable_irq();
+  NVIC_SetVectorTable(NVIC_VectTab_FLASH, 0x4000);
+
   LCD_Configuration();
   LCD_Initialization();
   clock_init();
 
-  TIM_init();
+
   USART1_Init();
 
   JSON_init();
@@ -81,6 +84,7 @@ int main(int argc, char *argv[])
   ptr = g_jsonInBuf;
 
   USART1_PutString("***** INIT DONE *****\n");
+  TIM_init();
 
   while(1) {
     //while(!TIM_GetITStatus(TIM2,TIM_IT_Update) != RESET);

@@ -8,7 +8,7 @@
 #include "misc.h"
 
 #include "timer.h"
-
+#include "usart.h"
 
 
 int TIM_init(){
@@ -24,6 +24,13 @@ int TIM_init(){
   TIM_Cmd(TIM2, ENABLE);
   TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);
 
+  NVIC_InitTypeDef n;
+  n.NVIC_IRQChannel = TIM2_IRQn;
+  n.NVIC_IRQChannelPreemptionPriority = 0;
+  n.NVIC_IRQChannelSubPriority = 1;
+  n.NVIC_IRQChannelCmd = ENABLE;
+  NVIC_Init(&n);
+
   return 0;
 }
 
@@ -33,6 +40,7 @@ volatile unsigned int g_sysTick;
 
 void TIM2_IRQHandler()
 {
+  USART1_PutString("irq\n");
   if (TIM_GetITStatus(TIM2, TIM_IT_Update) != RESET)
     {
       TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
