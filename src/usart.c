@@ -38,7 +38,7 @@ void USART1_Init(void)
   gpio_init_struct.GPIO_Mode = GPIO_Mode_IN_FLOATING;
   GPIO_Init(GPIOA, &gpio_init_struct);
 
-  /* Baud rate 9600, 8-bit data, One stop bit
+  /* Baud rate 115200, 8-bit data, One stop bit
    * No parity, Do both Rx and Tx, No HW flow control
    */
   usart1_init_struct.USART_BaudRate = 115200;
@@ -49,6 +49,7 @@ void USART1_Init(void)
   usart1_init_struct.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
   /* Configure USART1 */
   USART_Init(USART1, &usart1_init_struct);
+
   /* Enable RXNE interrupt */
   //USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
   /* Enable USART1 global interrupt */

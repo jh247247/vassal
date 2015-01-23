@@ -62,15 +62,13 @@ void clock_init(){
     }
 }
 
-extern char g_jsonInBuf[8192*2];
-extern unsigned int g_jsonLen;
-
 int main(int argc, char *argv[])
 {
   char* ptr;
   int r;
   __enable_irq();
-  NVIC_SetVectorTable(NVIC_VectTab_FLASH, 0x4000);
+  NVIC_SetVectorTable(NVIC_VectTab_FLASH, 0x4000); // make sure that
+                                                   // interrupts work
 
   LCD_Configuration();
   LCD_Initialization();
@@ -81,10 +79,12 @@ int main(int argc, char *argv[])
 
   JSON_init();
   LCD_Clear(LCD_Black);
-  ptr = g_jsonInBuf;
+
 
   USART1_PutString("***** INIT DONE *****\n");
   TIM_init();
+
+  ptr = g_jsonInBuf[JSON_WRITEBUF];
 
   while(1) {
     //while(!TIM_GetITStatus(TIM2,TIM_IT_Update) != RESET);
@@ -92,20 +92,23 @@ int main(int argc, char *argv[])
 
 
     if(USART_GetFlagStatus(USART1, USART_IT_RXNE) != RESET) {
-      *(ptr+g_jsonLen) = USART_ReceiveData(USART1);
+      *(ptr+g_jsonLen[JSON_WRITEBUF]) = USART_ReceiveData(USART1);
 
       // make sure that the start of the packet is an object brace.
       if(g_jsonLen == 0 &&
-         *(ptr+g_jsonLen) != '{') {
+         *(ptr+g_jsonLen[JSON_WRITEBUF]) != '{') {
         continue;
       }
 
       // check for end of string
-      if(*(ptr+g_jsonLen) == '\0') {
-        g_jsonLen++; // have to include null char
+      if(*(ptr+g_jsonLen[JSON_WRITEBUF]) == '\0') {
+        g_jsonLen[JSON_WRITEBUF]++; // have to include null char
+        JSON_SWAPBUFS;
+	USART1_PutString(g_jsonInBuf[JSON_READBUF]);
+	ptr = g_jsonInBuf[JSON_WRITEBUF];
         r = JSON_render();
 
-	// todo: better error reporting
+        // todo: better error reporting
         if(r == 1) {
           USART1_PutString("Error: 1!\n");
         } else if(r == 2){
@@ -117,16 +120,14 @@ int main(int argc, char *argv[])
         } else if(r == -3){
           USART1_PutString("Error: JSMN_ERROR_PART!\n");
         } else if(r != 0){
-	  USART1_PutString("Error: GENERAL\n");
-	}
-        g_jsonLen = 0; // reset for next command
-	USART1_PutString("\nDone!\n");
+          USART1_PutString("Error: GENERAL\n");
+        }
+
+        g_jsonLen[JSON_WRITEBUF] = 0; // reset for next command
+        USART1_PutString("\nDone!\n");
       } else {
-        g_jsonLen++;
+        g_jsonLen[JSON_WRITEBUF]++;
       }
-
-
-
     }
   }
 }

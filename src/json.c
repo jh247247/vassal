@@ -1,21 +1,40 @@
 #include "usart.h"
 #include "lcd_control.h"
 #include "string.h"
+#include "json.h"
 
 #include <jsmn.h>
 
 #define BREAK_CHAR '\r'
 #define END_CHAR '\0'
 
+#define JSON_TOKEN_AMOUNT 128 // cant really have more than 128 kinds of
+                              // elements on the screen right?
+#define JSON_ANIM_TOKEN_AMOUNT 8
 
-char g_jsonInBuf[4096];
-unsigned int g_jsonLen;
-jsmntok_t g_tokens[128]; // cant really have more than 128 kinds of
-                         // elements on the screen right?
+// double buffering is kinda hardcoded.
+char g_jsonInBuf[2][4096];
+unsigned int g_jsonLen[2];
+jsmntok_t g_tokens[JSON_TOKEN_AMOUNT];
+jsmntok_t *g_animTok[JSON_ANIM_TOKEN_AMOUNT];
+
+int g_jsonFlags;
+
+#define JSON_SETRENDERFLAG (g_jsonFlags |= 0x02)
+#define JSON_CLEARRENDERFLAG do{g_jsonFlags &= ~0x02;\
+    JSON_SETSKIPRENDERFLAG;} while(0)
+
+// anim flag is only set when we are playing some sort of animation.
+#define JSON_SETANIMFLAG (g_jsonFlags |= 0x04)
+#define JSON_CLEARANIMFLAG (g_jsonFlags &= ~0x04)
+
+
 
 
 void JSON_init() {
-  g_jsonLen = 0;
+  g_jsonLen[JSON_WRITEBUF] = 0;
+  g_jsonLen[JSON_READBUF] = 0;
+  g_jsonFlags = 0;
 }
 
 int atoi(const char* endptr) {
@@ -143,20 +162,32 @@ const char* JSON_renderStatic(int toknum);
 // TODO: add macros so that animations can be stored.
 int JSON_render() {
   int i;
+  int r = 0;
   // parse the input
   jsmn_parser p;
   jsmntok_t* t = g_tokens;
-  int len = g_jsonLen;
+  int len = g_jsonLen[JSON_READBUF];
 
-  jsmn_init(&p);
-  int r = jsmn_parse(&p, g_jsonInBuf, len, g_tokens,
+  if(JSON_GETSKIPRENDERFLAG) {
+    // save time by not re-rendering when we don't need to.
+    return 0;
+  }
+
+  JSON_SETRENDERFLAG;
+
+  // don't need to re-parse if we are playing some animation
+  if(!JSON_GETANIMFLAG) {
+    jsmn_init(&p);
+    r = jsmn_parse(&p, g_jsonInBuf[JSON_READBUF], len, g_tokens,
                      sizeof(g_tokens)/sizeof(g_tokens[0]));
+  }
 
   if (r < 0) {
     // invalid, do not render
     return r;
   }
 
+  // not enough tokens, idk. quit.
   if (r < 1){
     return 1;
   }
@@ -166,14 +197,24 @@ int JSON_render() {
     return 2;
   }
 
-  for(i = 1; i < r; i+=2) {
+  // note that all the static stuff is rendered every single time an
+  // animation is played
+  for(i = 1; i < r; i++) {
     if(t[i].type == JSMN_STRING) {
       JSON_renderStatic(i);
     } else if(t[i].type == JSMN_OBJECT) {
       // woah, we have an object!
       // that means we have to fire up the animation stuff now...
+      JSON_SETANIMFLAG;
+
+      // do anim stuff
     }
   }
+  // if we aren't doing an animation, we can safely clear the render flag.
+  if(!JSON_GETANIMFLAG) {
+    JSON_CLEARRENDERFLAG;
+  }
+
   return 0;
 }
 
@@ -181,14 +222,14 @@ const char* JSON_renderStatic(int toknum) {
   // only need to check first char of type to determine type
   // this means that you can ensure the drawing order of things on
   // the screen. Handy.
-  const char* ptr = g_jsonInBuf+g_tokens[toknum+1].start;
+  const char* ptr = g_jsonInBuf[JSON_READBUF]+g_tokens[toknum+1].start;
 
   if(g_tokens[toknum+1].type != JSMN_STRING){
     // can't really do anything, I don't know how to interpret this
     return ptr;
   }
 
-  char c = *(g_jsonInBuf+g_tokens[toknum].start);
+  char c = *(g_jsonInBuf[JSON_READBUF]+g_tokens[toknum].start);
 
 
   switch(c) {
