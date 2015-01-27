@@ -84,28 +84,25 @@ int main(int argc, char *argv[])
 
 
   while(1) {
-    if(JSON_GETSTARTRENDERFLAG) {
-      r = JSON_render();
+    r = JSON_render();
 
-      // todo: better error reporting
-      if(r == 1) {
-        USART1_PutString("Error: 1!\n");
-      } else if(r == 2){
-        USART1_PutString("Error: 2!\n");
-      } else if(r == -1){
-        USART1_PutString("Error: JSMN_NOMEM!\n");
-      } else if(r == -2){
-        USART1_PutString("Error: JSMN_INVAL!\n");
-      } else if(r == -3){
-        USART1_PutString("Error: JSMN_ERROR_PART!\n");
-      } else if(r != 0){
-        USART1_PutString("Error: GENERAL\n");
-      }
-
-      USART1_PutString("\nDone!\n");
-      JSON_CLEARSTARTRENDERFLAG;
+    // todo: better error reporting
+    if(r == 1) {
+      USART1_PutString("Error: 1!\n");
+    } else if(r == 2){
+      USART1_PutString("Error: 2!\n");
+    } else if(r == -1){
+      USART1_PutString("Error: JSMN_NOMEM!\n");
+    } else if(r == -2){
+      USART1_PutString("Error: JSMN_INVAL!\n");
+    } else if(r == -3){
+      USART1_PutString("Error: JSMN_ERROR_PART!\n");
+    } else if(r != 0){
+      USART1_PutString("Error: GENERAL\n");
     }
+
+    USART1_PutString("\nDone!\n");
     __asm__("WFI"); // sleep for a bit.
-  }
-  return 0;
+}
+return 0;
 }

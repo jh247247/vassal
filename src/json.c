@@ -12,29 +12,83 @@
                               // elements on the screen right?
 #define JSON_ANIM_TOKEN_AMOUNT 8
 
-// double buffering is kinda hardcoded.
-char g_jsonInBuf[2][4096];
-unsigned int g_jsonLen[2];
+#define JSON_AMOUNT_OF_BUFS 2
+#define JSON_BUF_LEN 4096
+
+char g_jsonInBuf[JSON_AMOUNT_OF_BUFS][JSON_BUF_LEN];
+unsigned int g_jsonLen[JSON_AMOUNT_OF_BUFS];
+
 jsmntok_t g_tokens[JSON_TOKEN_AMOUNT];
-jsmntok_t *g_animTok[JSON_ANIM_TOKEN_AMOUNT];
+jsmntok_t *g_animTok[JSON_ANIM_TOKEN_AMOUNT]; // ptr to tokens holding animations
 
-int g_jsonFlags;
+// this is flag stuff
 
-#define JSON_SETRENDERFLAG (g_jsonFlags |= 0x02)
-#define JSON_CLEARRENDERFLAG do{g_jsonFlags &= ~0x02;\
-    JSON_SETSKIPRENDERFLAG;} while(0)
+typedef struct {
+  int writeBuf;
+  int readyBufs; // bitfield of bufs ready to be rendered
+} json_flags_t;
 
-// anim flag is only set when we are playing some sort of animation.
-#define JSON_SETANIMFLAG (g_jsonFlags |= 0x04)
-#define JSON_CLEARANIMFLAG (g_jsonFlags &= ~0x04)
+json_flags_t g_jsonFlags;
 
+#define JSON_BUF_IS_READY(y) (g_jsonFlags.readyBufs & (1<<y))
 
+// these should return pretty quickly unless there is super high load
+char JSON_nextFullBuf() {
+  // linear search for next buffer that is full
+  unsigned char i = 0;
+  while(!JSON_BUF_IS_READY(i) && i < JSON_AMOUNT_OF_BUFS) {
+    i++;
+  }
 
+  if(i == JSON_AMOUNT_OF_BUFS) {
+    return -1; // NO FULL BUFS
+  }
+
+  return i;
+}
+
+char JSON_nextEmptyBuf() {
+  // linear search for next buffer that is empty
+  unsigned char i = 0;
+  while(JSON_BUF_IS_READY(i) && i < JSON_AMOUNT_OF_BUFS) {
+    i++;
+  }
+
+  if(i == JSON_AMOUNT_OF_BUFS) {
+    return -1; // NO EMPTY BUFS
+  }
+
+  return i;
+}
+
+// this is normal json stuff
 
 void JSON_init() {
-  g_jsonLen[JSON_WRITEBUF] = 0;
-  g_jsonLen[JSON_READBUF] = 0;
-  g_jsonFlags = 0;
+  g_jsonFlags.writeBuf = JSON_nextEmptyBuf();
+}
+
+void JSON_appendToBuf(char c) {
+  // make sure that the buffer we are writing to is not full right now
+  if(g_jsonFlags.writeBuf < 0 || JSON_BUF_IS_READY(g_jsonFlags.writeBuf)) {
+    // oops, need to swap bufs
+    g_jsonFlags.writeBuf = JSON_nextEmptyBuf();
+    if(g_jsonFlags.writeBuf < 0) {
+      return; // we can't do anything, no empty bufs
+    }
+  }
+  int i = g_jsonFlags.writeBuf;
+  if(g_jsonInBuf[i][0] != '{') {
+    g_jsonLen[i] = 0;
+  }
+
+  // write and increment the length
+  *(g_jsonInBuf[i]+g_jsonLen[i]) = c;
+  g_jsonLen[i]++;
+
+  if(*(g_jsonInBuf[i]+g_jsonLen[i]-1) == '\0') {
+    // end of string, set the bit int the readybufs
+    g_jsonFlags.readyBufs |= (1<<g_jsonFlags.writeBuf);
+  }
 }
 
 int atoi(const char* endptr) {
@@ -155,7 +209,7 @@ const char* JSON_evalClear(const char* ptr) {
   return ptr;
 }
 
-const char* JSON_renderStatic(int toknum);
+const char* JSON_renderStatic(int toknum, int buf);
 
 
 
@@ -164,23 +218,23 @@ int JSON_render() {
   int i;
   int r = 0;
   // parse the input
+  int buf = JSON_nextFullBuf(); // wait, what do I do with
+                                // animations... FIXME
+
+  if(buf < 0) {
+    return -1; // wooo
+  }
+
   jsmn_parser p;
   jsmntok_t* t = g_tokens;
-  int len = g_jsonLen[JSON_READBUF];
-
-  if(JSON_GETSKIPRENDERFLAG) {
-    // save time by not re-rendering when we don't need to.
-    return 0;
-  }
-
-  JSON_SETRENDERFLAG;
+  int len = g_jsonLen[buf];
 
   // don't need to re-parse if we are playing some animation
-  if(!JSON_GETANIMFLAG) {
-    jsmn_init(&p);
-    r = jsmn_parse(&p, g_jsonInBuf[JSON_READBUF], len, g_tokens,
-                     sizeof(g_tokens)/sizeof(g_tokens[0]));
-  }
+  /* if(!JSON_GETANIMFLAG) { */
+  jsmn_init(&p);
+  r = jsmn_parse(&p, g_jsonInBuf[buf], len, g_tokens,
+                 sizeof(g_tokens)/sizeof(g_tokens[0]));
+  /* } */
 
   if (r < 0) {
     // invalid, do not render
@@ -201,36 +255,30 @@ int JSON_render() {
   // animation is played
   for(i = 1; i < r; i++) {
     if(t[i].type == JSMN_STRING) {
-      JSON_renderStatic(i);
+      JSON_renderStatic(i,buf);
     } else if(t[i].type == JSMN_OBJECT) {
       // woah, we have an object!
       // that means we have to fire up the animation stuff now...
-      JSON_SETANIMFLAG;
+      // TODO
 
       // do anim stuff
     }
   }
-  // if we aren't doing an animation, we can safely clear the render flag.
-  if(!JSON_GETANIMFLAG) {
-    JSON_CLEARRENDERFLAG;
-  }
-
   return 0;
 }
 
-const char* JSON_renderStatic(int toknum) {
+const char* JSON_renderStatic(int toknum, int buf) {
   // only need to check first char of type to determine type
   // this means that you can ensure the drawing order of things on
   // the screen. Handy.
-  const char* ptr = g_jsonInBuf[JSON_READBUF]+g_tokens[toknum+1].start;
+  const char* ptr = g_jsonInBuf[buf]+g_tokens[toknum+1].start;
 
   if(g_tokens[toknum+1].type != JSMN_STRING){
     // can't really do anything, I don't know how to interpret this
     return ptr;
   }
 
-  char c = *(g_jsonInBuf[JSON_READBUF]+g_tokens[toknum].start);
-
+  char c = *(g_jsonInBuf[buf]+g_tokens[toknum].start);
 
   switch(c) {
   case 'l':

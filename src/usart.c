@@ -86,17 +86,7 @@ void USART1_IRQHandler()
 {
 
   if(USART_GetFlagStatus(USART1, USART_IT_RXNE) != RESET) {
-    JSON_WRITEBUF_APPEND(USART_ReceiveData(USART1));
-    // makes sure the start of packet is object
-    if(g_jsonInBuf[JSON_WRITEBUF][0] != '{') {
-      g_jsonLen[JSON_WRITEBUF] = 0;
-    }
+    JSON_appendToBuf(USART_ReceiveData(USART1));
 
-    if(JSON_WRITEBUF_GETEND == '\0') {
-      g_jsonLen[JSON_WRITEBUF]++;
-      JSON_SWAPBUFS;
-      JSON_WRITEBUF_RESET;
-      JSON_SETSTARTRENDERFLAG;
-    }
   }
 }
