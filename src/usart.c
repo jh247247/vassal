@@ -5,10 +5,11 @@
 #include "stm32f10x_adc.h"
 #include "stm32f10x_usart.h"
 #include "stm32f10x_flash.h"
-#include "esp8266.h"
+#include "misc.h"
 #include "timer.h"
 
 #include "usart.h"
+#include "json.h"
 
 void USART1_Init(void)
 {
@@ -50,10 +51,15 @@ void USART1_Init(void)
   /* Configure USART1 */
   USART_Init(USART1, &usart1_init_struct);
 
+  USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
+
   /* Enable RXNE interrupt */
-  //USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
-  /* Enable USART1 global interrupt */
-  //NVIC_EnableIRQ(USART1_IRQn);
+  NVIC_InitTypeDef n;
+  n.NVIC_IRQChannel = USART1_IRQn;
+  n.NVIC_IRQChannelPreemptionPriority = 0;
+  n.NVIC_IRQChannelSubPriority = 1;
+  n.NVIC_IRQChannelCmd = ENABLE;
+  NVIC_Init(&n);
 
   /* Enable USART1 */
   USART_Cmd(USART1, ENABLE);
@@ -74,4 +80,23 @@ void USART1_PutString(const char * str)
       str++;
     }
   USART1_PutChar('\0');
+}
+
+void USART1_IRQHandler()
+{
+
+  if(USART_GetFlagStatus(USART1, USART_IT_RXNE) != RESET) {
+    JSON_WRITEBUF_APPEND(USART_ReceiveData(USART1));
+    // makes sure the start of packet is object
+    if(g_jsonInBuf[JSON_WRITEBUF][0] != '{') {
+      g_jsonLen[JSON_WRITEBUF] = 0;
+    }
+
+    if(JSON_WRITEBUF_GETEND == '\0') {
+      g_jsonLen[JSON_WRITEBUF]++;
+      JSON_SWAPBUFS;
+      JSON_WRITEBUF_RESET;
+      JSON_SETSTARTRENDERFLAG;
+    }
+  }
 }

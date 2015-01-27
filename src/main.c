@@ -64,7 +64,6 @@ void clock_init(){
 
 int main(int argc, char *argv[])
 {
-  char* ptr;
   int r;
   __enable_irq();
   NVIC_SetVectorTable(NVIC_VectTab_FLASH, 0x4000); // make sure that
@@ -72,62 +71,41 @@ int main(int argc, char *argv[])
 
   LCD_Configuration();
   LCD_Initialization();
-  clock_init();
-
-
-  USART1_Init();
+  clock_init(); // hey, you can overclock later here. maybe.
 
   JSON_init();
-  LCD_Clear(LCD_Black);
-
-
-  USART1_PutString("***** INIT DONE *****\n");
+  USART1_Init();
   TIM_init();
 
-  ptr = g_jsonInBuf[JSON_WRITEBUF];
+  LCD_Clear(LCD_Black);
+
+  USART1_PutString("***** INIT DONE *****\n");
+
+
 
   while(1) {
-    //while(!TIM_GetITStatus(TIM2,TIM_IT_Update) != RESET);
-    //TIM_ClearITPendingBit(TIM2,TIM_IT_Update);
+    if(JSON_GETSTARTRENDERFLAG) {
+      r = JSON_render();
 
-
-    if(USART_GetFlagStatus(USART1, USART_IT_RXNE) != RESET) {
-      *(ptr+g_jsonLen[JSON_WRITEBUF]) = USART_ReceiveData(USART1);
-
-      // make sure that the start of the packet is an object brace.
-      if(g_jsonLen == 0 &&
-         *(ptr+g_jsonLen[JSON_WRITEBUF]) != '{') {
-        continue;
+      // todo: better error reporting
+      if(r == 1) {
+        USART1_PutString("Error: 1!\n");
+      } else if(r == 2){
+        USART1_PutString("Error: 2!\n");
+      } else if(r == -1){
+        USART1_PutString("Error: JSMN_NOMEM!\n");
+      } else if(r == -2){
+        USART1_PutString("Error: JSMN_INVAL!\n");
+      } else if(r == -3){
+        USART1_PutString("Error: JSMN_ERROR_PART!\n");
+      } else if(r != 0){
+        USART1_PutString("Error: GENERAL\n");
       }
 
-      // check for end of string
-      if(*(ptr+g_jsonLen[JSON_WRITEBUF]) == '\0') {
-        g_jsonLen[JSON_WRITEBUF]++; // have to include null char
-        JSON_SWAPBUFS;
-	USART1_PutString(g_jsonInBuf[JSON_READBUF]);
-	ptr = g_jsonInBuf[JSON_WRITEBUF];
-        r = JSON_render();
-
-        // todo: better error reporting
-        if(r == 1) {
-          USART1_PutString("Error: 1!\n");
-        } else if(r == 2){
-          USART1_PutString("Error: 2!\n");
-        } else if(r == -1){
-          USART1_PutString("Error: JSMN_NOMEM!\n");
-        } else if(r == -2){
-          USART1_PutString("Error: JSMN_INVAL!\n");
-        } else if(r == -3){
-          USART1_PutString("Error: JSMN_ERROR_PART!\n");
-        } else if(r != 0){
-          USART1_PutString("Error: GENERAL\n");
-        }
-
-        g_jsonLen[JSON_WRITEBUF] = 0; // reset for next command
-        USART1_PutString("\nDone!\n");
-      } else {
-        g_jsonLen[JSON_WRITEBUF]++;
-      }
+      USART1_PutString("\nDone!\n");
+      JSON_CLEARSTARTRENDERFLAG;
     }
+    __asm__("WFI"); // sleep for a bit.
   }
+  return 0;
 }
