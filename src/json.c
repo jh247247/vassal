@@ -31,11 +31,13 @@ typedef struct {
 json_flags_t g_jsonFlags;
 
 #define JSON_BUF_IS_READY(y) (g_jsonFlags.readyBufs & (1<<y))
-
+#define JSON_BUF_SET_READY(y) (g_jsonFlags.readyBufs |= (1<<y))
+#define JSON_BUF_CLEAR_READY(y) do{(g_jsonFlags.readyBufs &= ~(1<<y));\
+    g_jsonLen[y] = 0;}while(0);
 // these should return pretty quickly unless there is super high load
-char JSON_nextFullBuf() {
+int JSON_nextFullBuf() {
   // linear search for next buffer that is full
-  unsigned char i = 0;
+  int i = 0;
   while(!JSON_BUF_IS_READY(i) && i < JSON_AMOUNT_OF_BUFS) {
     i++;
   }
@@ -47,9 +49,9 @@ char JSON_nextFullBuf() {
   return i;
 }
 
-char JSON_nextEmptyBuf() {
+int JSON_nextEmptyBuf() {
   // linear search for next buffer that is empty
-  unsigned char i = 0;
+  int i = 0;
   while(JSON_BUF_IS_READY(i) && i < JSON_AMOUNT_OF_BUFS) {
     i++;
   }
@@ -76,6 +78,7 @@ void JSON_appendToBuf(char c) {
       return; // we can't do anything, no empty bufs
     }
   }
+
   int i = g_jsonFlags.writeBuf;
   if(g_jsonInBuf[i][0] != '{') {
     g_jsonLen[i] = 0;
@@ -87,7 +90,7 @@ void JSON_appendToBuf(char c) {
 
   if(*(g_jsonInBuf[i]+g_jsonLen[i]-1) == '\0') {
     // end of string, set the bit int the readybufs
-    g_jsonFlags.readyBufs |= (1<<g_jsonFlags.writeBuf);
+    JSON_BUF_SET_READY(g_jsonFlags.writeBuf);
   }
 }
 
@@ -220,9 +223,8 @@ int JSON_render() {
   // parse the input
   int buf = JSON_nextFullBuf(); // wait, what do I do with
                                 // animations... FIXME
-
   if(buf < 0) {
-    return -1; // wooo
+    return 3; // wooo
   }
 
   jsmn_parser p;
@@ -264,6 +266,10 @@ int JSON_render() {
       // do anim stuff
     }
   }
+
+  // TODO anims
+  JSON_BUF_CLEAR_READY(buf);
+  //g_jsonFlags.readyBufs &= ~(1<<buf);
   return 0;
 }
 

@@ -17,7 +17,7 @@ int TIM_init(){
   TIM_TimeBaseInitTypeDef timerInitStructure;
   timerInitStructure.TIM_Prescaler = 24000;
   timerInitStructure.TIM_CounterMode = TIM_CounterMode_Up;
-  timerInitStructure.TIM_Period = 10000;
+  timerInitStructure.TIM_Period = 100;
   timerInitStructure.TIM_ClockDivision = TIM_CKD_DIV1;
   timerInitStructure.TIM_RepetitionCounter = 0;
   TIM_TimeBaseInit(TIM2, &timerInitStructure);

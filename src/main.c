@@ -84,9 +84,14 @@ int main(int argc, char *argv[])
 
 
   while(1) {
+    __asm__("WFI"); // sleep for a bit.
     r = JSON_render();
 
     // todo: better error reporting
+    if(r == 3) {
+      // no free bufs
+      continue;
+    }
     if(r == 1) {
       USART1_PutString("Error: 1!\n");
     } else if(r == 2){
@@ -102,7 +107,6 @@ int main(int argc, char *argv[])
     }
 
     USART1_PutString("\nDone!\n");
-    __asm__("WFI"); // sleep for a bit.
 }
 return 0;
 }
