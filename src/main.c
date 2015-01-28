@@ -91,22 +91,13 @@ int main(int argc, char *argv[])
     if(r == 3) {
       // no free bufs
       continue;
-    }
-    if(r == 1) {
-      USART1_PutString("Error: 1!\n");
-    } else if(r == 2){
-      USART1_PutString("Error: 2!\n");
-    } else if(r == -1){
-      USART1_PutString("Error: JSMN_NOMEM!\n");
-    } else if(r == -2){
-      USART1_PutString("Error: JSMN_INVAL!\n");
-    } else if(r == -3){
-      USART1_PutString("Error: JSMN_ERROR_PART!\n");
-    } else if(r != 0){
-      USART1_PutString("Error: GENERAL\n");
+    } else if(r != 0) {
+      JSON_init(); // reset buffers in case of errors
+      USART1_PutChar('N');
+    }else {
+      USART1_PutChar('A');
     }
 
-    USART1_PutString("\nDone!\n");
 }
 return 0;
 }

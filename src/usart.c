@@ -42,7 +42,7 @@ void USART1_Init(void)
   /* Baud rate 115200, 8-bit data, One stop bit
    * No parity, Do both Rx and Tx, No HW flow control
    */
-  usart1_init_struct.USART_BaudRate = 115200;
+  usart1_init_struct.USART_BaudRate = 921600;
   usart1_init_struct.USART_WordLength = USART_WordLength_8b;
   usart1_init_struct.USART_StopBits = USART_StopBits_1;
   usart1_init_struct.USART_Parity = USART_Parity_No ;
@@ -87,6 +87,5 @@ void USART1_IRQHandler()
 
   if(USART_GetFlagStatus(USART1, USART_IT_RXNE) != RESET) {
     JSON_appendToBuf(USART_ReceiveData(USART1));
-
   }
 }

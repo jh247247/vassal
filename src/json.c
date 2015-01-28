@@ -66,6 +66,12 @@ int JSON_nextEmptyBuf() {
 // this is normal json stuff
 
 void JSON_init() {
+  int i;
+  for (i = 0; i < JSON_AMOUNT_OF_BUFS; i++) {
+    JSON_BUF_CLEAR_READY(i);
+  }
+
+
   g_jsonFlags.writeBuf = JSON_nextEmptyBuf();
 }
 
