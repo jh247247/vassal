@@ -94,8 +94,6 @@ int main(int argc, char *argv[])
     } else if(r != 0) {
       JSON_init(); // reset buffers in case of errors
       USART1_PutChar('N');
-    }else {
-      USART1_PutChar('A');
     }
 
 }

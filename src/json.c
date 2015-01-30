@@ -19,25 +19,45 @@ char g_jsonInBuf[JSON_AMOUNT_OF_BUFS][JSON_BUF_LEN];
 unsigned int g_jsonLen[JSON_AMOUNT_OF_BUFS];
 
 jsmntok_t g_tokens[JSON_TOKEN_AMOUNT];
-jsmntok_t *g_animTok[JSON_ANIM_TOKEN_AMOUNT]; // ptr to tokens holding animations
+jsmntok_t *g_animTok[JSON_ANIM_TOKEN_AMOUNT]; // ptr to tokens holding
+					      // animations
+int g_animTokLen;
 
 // this is flag stuff
 
 typedef struct {
   int writeBuf;
+  int readBuf;
   int readyBufs; // bitfield of bufs ready to be rendered
+  int animLock : 1; // lock current buffer since there is animations playing
 } json_flags_t;
 
 json_flags_t g_jsonFlags;
 
+#define JSON_ANIM_LOCK_GET (g_jsonFlags.animLock)
+#define JSON_ANIM_LOCK_SET (g_jsonFlags.animLock = 1)
+#define JSON_ANIM_LOCK_CLEAR do{(g_jsonFlags.animLock = 0);     \
+    g_jsonFlags.readBuf = -1;}
+
 #define JSON_BUF_IS_READY(y) (g_jsonFlags.readyBufs & (1<<y))
 #define JSON_BUF_SET_READY(y) (g_jsonFlags.readyBufs |= (1<<y))
-#define JSON_BUF_CLEAR_READY(y) do{(g_jsonFlags.readyBufs &= ~(1<<y));\
-    g_jsonLen[y] = 0;}while(0);
+// can't clear ready flag if locked by animation
+#define JSON_BUF_CLEAR_READY(y) do{if(JSON_ANIM_LOCK_GET){break;}       \
+    (g_jsonFlags.readyBufs &= ~(1<<y));                                 \
+    g_jsonLen[y] = 0;                                                   \
+    g_jsonFlags.readBuf = -1;}while(0);
+
+
 // these should return pretty quickly unless there is super high load
 int JSON_nextFullBuf() {
   // linear search for next buffer that is full
   int i = 0;
+
+  // playing animation. can't change buffer.
+  if(JSON_ANIM_LOCK_GET) {
+    return g_jsonFlags.readBuf;
+  }
+
   while(!JSON_BUF_IS_READY(i) && i < JSON_AMOUNT_OF_BUFS) {
     i++;
   }
@@ -71,9 +91,10 @@ void JSON_init() {
     JSON_BUF_CLEAR_READY(i);
   }
 
-
+  g_animTokLen = 0;
   g_jsonFlags.writeBuf = JSON_nextEmptyBuf();
 }
+
 
 void JSON_appendToBuf(char c) {
   // make sure that the buffer we are writing to is not full right now
@@ -129,7 +150,7 @@ int getAmountOfArgs(const char** ptr, const char** args, int expected)
       i++;
     }
     (*ptr)++;
-  } while(**ptr != BREAK_CHAR && **ptr != END_CHAR);
+  } while(**ptr != BREAK_CHAR && **ptr != END_CHAR && **ptr != '\"');
   return i;
 }
 
@@ -153,7 +174,7 @@ const char* JSON_evalLine(const char* ptr) {
 // args are x0, x1, y0, y1, color
 const char* JSON_evalRect(const char* ptr) {
   const char* data[4] = {NULL};
-  if(getAmountOfArgs(&ptr, data, 4) != 4) {
+  if(getAmountOfArgs(&ptr, data, 5) != 5) {
     // how do I recover? do all the other elements die?
     return ptr; // error!
   }
@@ -238,11 +259,11 @@ int JSON_render() {
   int len = g_jsonLen[buf];
 
   // don't need to re-parse if we are playing some animation
-  /* if(!JSON_GETANIMFLAG) { */
-  jsmn_init(&p);
-  r = jsmn_parse(&p, g_jsonInBuf[buf], len, g_tokens,
-                 sizeof(g_tokens)/sizeof(g_tokens[0]));
-  /* } */
+  if(!JSON_ANIM_LOCK_GET) {
+    jsmn_init(&p);
+    r = jsmn_parse(&p, g_jsonInBuf[buf], len, g_tokens,
+                   sizeof(g_tokens)/sizeof(g_tokens[0]));
+  }
 
   if (r < 0) {
     // invalid, do not render
@@ -269,13 +290,17 @@ int JSON_render() {
       // that means we have to fire up the animation stuff now...
       // TODO
 
+      // lock read buffer so that we don't overwrite it
+      JSON_ANIM_LOCK_SET;
+
       // do anim stuff
     }
   }
 
   // TODO anims
+
   JSON_BUF_CLEAR_READY(buf);
-  //g_jsonFlags.readyBufs &= ~(1<<buf);
+
   return 0;
 }
 
