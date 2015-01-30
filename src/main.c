@@ -84,7 +84,6 @@ int main(int argc, char *argv[])
 
 
   while(1) {
-    __asm__("WFI"); // sleep for a bit.
     r = JSON_render();
 
     // todo: better error reporting
@@ -95,7 +94,7 @@ int main(int argc, char *argv[])
       JSON_init(); // reset buffers in case of errors
       USART1_PutChar('N');
     }
-
-}
-return 0;
+    __asm__("WFI"); // sleep for a bit.
+  }
+  return 0;
 }

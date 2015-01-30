@@ -13,7 +13,7 @@
 #define JSON_ANIM_TOKEN_AMOUNT 8
 
 #define JSON_AMOUNT_OF_BUFS 2
-#define JSON_BUF_LEN 4096
+#define JSON_BUF_LEN 2048
 
 char g_jsonInBuf[JSON_AMOUNT_OF_BUFS][JSON_BUF_LEN];
 unsigned int g_jsonLen[JSON_AMOUNT_OF_BUFS];
@@ -174,7 +174,7 @@ const char* JSON_evalLine(const char* ptr) {
 // args are x0, x1, y0, y1, color
 const char* JSON_evalRect(const char* ptr) {
   const char* data[4] = {NULL};
-  if(getAmountOfArgs(&ptr, data, 5) != 5) {
+  if(getAmountOfArgs(&ptr, data, 4) != 4) {
     // how do I recover? do all the other elements die?
     return ptr; // error!
   }
@@ -193,7 +193,7 @@ const char* JSON_evalFilledRect(const char* ptr) {
   if(getAmountOfArgs(&ptr, data, 4) != 4) {
     // how do I recover? do all the other elements die?
     return ptr; // error!
-  } // todo: too many args
+  }
   LCD_FillRect(atoi(data[0]),
                atoi(data[2]),
                atoi(data[1]),
@@ -250,6 +250,7 @@ int JSON_render() {
   // parse the input
   int buf = JSON_nextFullBuf(); // wait, what do I do with
                                 // animations... FIXME
+
   if(buf < 0) {
     return 3; // wooo
   }
@@ -298,7 +299,6 @@ int JSON_render() {
   }
 
   // TODO anims
-
   JSON_BUF_CLEAR_READY(buf);
 
   return 0;
@@ -321,25 +321,25 @@ const char* JSON_renderStatic(int toknum, int buf) {
   case 'l':
     do{
       ptr = JSON_evalLine(ptr);
-    } while(*(ptr+1) != '\"');
+    } while(*(ptr+1) != '\"' && *(ptr) != END_CHAR);
     break;
 
   case 'r':
     do{
       ptr = JSON_evalRect(ptr);
-    } while(*(ptr+1) != '\"');
+    } while(*(ptr+1) != '\"' && *(ptr) != END_CHAR);
     break;
 
   case 'f':
     do{
       ptr = JSON_evalFilledRect(ptr);
-    } while(*(ptr+1) != '\"');
+    } while(*(ptr+1) != '\"' && *(ptr) != END_CHAR);
     break;
 
   case 's': // small font string
     do{
       ptr = JSON_evalString(ptr);
-    } while(*(ptr+1) != '\"');
+    } while(*(ptr+1) != '\"' && *(ptr) != END_CHAR);
     break;
 
   case 'b': // b -> bitmap base64 encoding (1bpp)
