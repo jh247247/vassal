@@ -28,26 +28,23 @@ void LCD_Configuration(void)
   // Open the clock we want
   RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA|
                          RCC_APB2Periph_GPIOB|
-                         RCC_APB2Periph_GPIOC|
-                         RCC_APB2Periph_GPIOD, ENABLE);
+                         RCC_APB2Periph_GPIOC, ENABLE);
 
   // Configure the LCD pins for push-pull output
   // This is just the lower 8 bits of data
   GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0|GPIO_Pin_1|GPIO_Pin_2|
-    GPIO_Pin_3|GPIO_Pin_4|GPIO_Pin_5|GPIO_Pin_6|GPIO_Pin_7|GPIO_Pin_15;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_Pin_3|GPIO_Pin_4|GPIO_Pin_5|GPIO_Pin_6|GPIO_Pin_7;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
   GPIO_Init(GPIOA,&GPIO_InitStructure);
 
 
-  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9 | GPIO_Pin_2 | GPIO_Pin_5;
   GPIO_Init(GPIOB,&GPIO_InitStructure);
 
   GPIO_InitStructure.GPIO_Pin = GPIO_Pin_13|GPIO_Pin_14|GPIO_Pin_15;
   GPIO_Init(GPIOC,&GPIO_InitStructure);
 
-  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5;
-  GPIO_Init(GPIOD,&GPIO_InitStructure);
 
 }
 
@@ -673,6 +670,9 @@ __inline void LCD_WriteIndex(u16 idx)
  */
 inline void LCD_WriteData(u16 data)
 {
+  // NOTE: this is a destructive write for speed.
+  // make sure you have no other outputs on the port or they WILL BE
+  // CLEARED!
   // assume that cs is already low
   ((uint8_t __IO*)&GPIOA->ODR)[0] = data>>8;
   Clr_nWr;

@@ -6,6 +6,9 @@ OBJS+=lcd_control.o
 OBJS+=timer.o
 OBJS+=usart.o
 OBJS+=json.o
+OBJS+=gfx.o
+OBJS+=util.o
+OBJS+=bootloader.o
 
 
 all: src

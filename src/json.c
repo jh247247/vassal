@@ -2,26 +2,23 @@
 #include "lcd_control.h"
 #include "string.h"
 #include "json.h"
+#include "gfx.h"
+#include "util.h"
 
 #include <jsmn.h>
 
-#define BREAK_CHAR '\r'
-#define END_CHAR '\0'
 
 #define JSON_TOKEN_AMOUNT 128 // cant really have more than 128 kinds of
                               // elements on the screen right?
 #define JSON_ANIM_TOKEN_AMOUNT 8
 
 #define JSON_AMOUNT_OF_BUFS 2
-#define JSON_BUF_LEN 2048
+#define JSON_BUF_LEN 4096
 
 char g_jsonInBuf[JSON_AMOUNT_OF_BUFS][JSON_BUF_LEN];
 unsigned int g_jsonLen[JSON_AMOUNT_OF_BUFS];
 
 jsmntok_t g_tokens[JSON_TOKEN_AMOUNT];
-jsmntok_t *g_animTok[JSON_ANIM_TOKEN_AMOUNT]; // ptr to tokens holding
-					      // animations
-int g_animTokLen;
 
 // this is flag stuff
 
@@ -37,7 +34,7 @@ json_flags_t g_jsonFlags;
 #define JSON_ANIM_LOCK_GET (g_jsonFlags.animLock)
 #define JSON_ANIM_LOCK_SET (g_jsonFlags.animLock = 1)
 #define JSON_ANIM_LOCK_CLEAR do{(g_jsonFlags.animLock = 0);     \
-    g_jsonFlags.readBuf = -1;}
+    g_jsonFlags.readBuf = -1;}while(0)
 
 #define JSON_BUF_IS_READY(y) (g_jsonFlags.readyBufs & (1<<y))
 #define JSON_BUF_SET_READY(y) (g_jsonFlags.readyBufs |= (1<<y))
@@ -91,7 +88,6 @@ void JSON_init() {
     JSON_BUF_CLEAR_READY(i);
   }
 
-  g_animTokLen = 0;
   g_jsonFlags.writeBuf = JSON_nextEmptyBuf();
 }
 
@@ -121,21 +117,14 @@ void JSON_appendToBuf(char c) {
   }
 }
 
-int atoi(const char* endptr) {
-  int mult = 1;
-  int retval = 0;
-  while(*endptr >= '0' && *endptr <= '9') {
-    retval += mult*(*endptr-'0');
-    endptr--;
-    mult *= 10;
-  }
-  return retval;
-}
+
 
 // ptr is pointer to start of string to parse (ffw to break char)
 // args is arg list to return (gets written to with first 'expected'
 // amount of args)
 // expected is expected amount of args
+
+// note that -1 args means an undefined amount of args
 
 // note that in the case of too many args, we stop writing to args and
 // ffw to the break char
@@ -251,6 +240,14 @@ int JSON_render() {
   int buf = JSON_nextFullBuf(); // wait, what do I do with
                                 // animations... FIXME
 
+  if(!GFX_hasAnimationsPending()) {
+    JSON_ANIM_LOCK_CLEAR;
+  } else {
+    JSON_ANIM_LOCK_SET;
+    GFX_renderAnim();
+    return 0;
+  }
+
   if(buf < 0) {
     return 3; // wooo
   }
@@ -285,71 +282,18 @@ int JSON_render() {
   // animation is played
   for(i = 1; i < r; i++) {
     if(t[i].type == JSMN_STRING) {
-      JSON_renderStatic(i,buf);
-    } else if(t[i].type == JSMN_OBJECT) {
+      GFX_renderStatic(g_jsonInBuf[buf][g_tokens[i].start],
+                       &g_jsonInBuf[buf][g_tokens[i+1].start],
+                       g_tokens[i+1].size);
+    } else if(t[i].type == JSMN_OBJECT && !JSON_ANIM_LOCK_GET) {
       // woah, we have an object!
-      // that means we have to fire up the animation stuff now...
-      // TODO
-
-      // lock read buffer so that we don't overwrite it
-      JSON_ANIM_LOCK_SET;
-
-      // do anim stuff
+      USART1_PutChar('a');
+      GFX_appendAnim(&t[i],g_jsonInBuf[buf]);
     }
   }
 
-  // TODO anims
+
   JSON_BUF_CLEAR_READY(buf);
-
+  USART1_PutChar('D');
   return 0;
-}
-
-const char* JSON_renderStatic(int toknum, int buf) {
-  // only need to check first char of type to determine type
-  // this means that you can ensure the drawing order of things on
-  // the screen. Handy.
-  const char* ptr = g_jsonInBuf[buf]+g_tokens[toknum+1].start;
-
-  if(g_tokens[toknum+1].type != JSMN_STRING){
-    // can't really do anything, I don't know how to interpret this
-    return ptr;
-  }
-
-  char c = *(g_jsonInBuf[buf]+g_tokens[toknum].start);
-
-  switch(c) {
-  case 'l':
-    do{
-      ptr = JSON_evalLine(ptr);
-    } while(*(ptr+1) != '\"' && *(ptr) != END_CHAR);
-    break;
-
-  case 'r':
-    do{
-      ptr = JSON_evalRect(ptr);
-    } while(*(ptr+1) != '\"' && *(ptr) != END_CHAR);
-    break;
-
-  case 'f':
-    do{
-      ptr = JSON_evalFilledRect(ptr);
-    } while(*(ptr+1) != '\"' && *(ptr) != END_CHAR);
-    break;
-
-  case 's': // small font string
-    do{
-      ptr = JSON_evalString(ptr);
-    } while(*(ptr+1) != '\"' && *(ptr) != END_CHAR);
-    break;
-
-  case 'b': // b -> bitmap base64 encoding (1bpp)
-    break;
-  case 'c': // c -> color bitmap (16bpp)
-    break;
-  case 'C': // clear screen
-    ptr = JSON_evalClear(ptr);
-  default:
-    break;
-  }
-  return ptr;
 }

@@ -15,6 +15,7 @@
 #include "stm32f10x_flash.h"
 #include "misc.h"
 #include "math.h"
+#include "bootloader.h"
 
 
 #include "lcd_control.h"
@@ -48,8 +49,8 @@ void clock_init(){
       /* PCLK2 = HCLK */
       RCC_PCLK1Config(RCC_HCLK_Div2);
       /* PCLK1 = HCLK/2 */
-      RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_9);
-
+      RCC_PLLConfig(RCC_PLLSource_HSI_Div2, RCC_PLLMul_16);
+      SystemCoreClock = 64000000;
       RCC_PLLCmd(ENABLE);
       /* Enable PLL */
       while(RCC_GetFlagStatus(RCC_FLAG_PLLRDY) == RESET);
@@ -62,28 +63,33 @@ void clock_init(){
     }
 }
 
+
+void Delay(volatile unsigned long delay) {
+  for(; delay; --delay );
+}
+
 int main(int argc, char *argv[])
 {
+  //BOOTLOADER_reset();
+
   int r;
   __enable_irq();
-  NVIC_SetVectorTable(NVIC_VectTab_FLASH, 0x4000); // make sure that
-                                                   // interrupts work
+  //NVIC_SetVectorTable(NVIC_VectTab_FLASH, 0x4000); // make sure that
+  // interrupts work
+  clock_init(); // hey, you can overclock later here. maybe.
+
 
   LCD_Configuration();
   LCD_Initialization();
-  clock_init(); // hey, you can overclock later here. maybe.
-
+  LCD_Clear(LCD_Black);
   JSON_init();
   USART1_Init();
   TIM_init();
 
-  LCD_Clear(LCD_Black);
-
   USART1_PutString("***** INIT DONE *****\n");
 
-
-
   while(1) {
+
     r = JSON_render();
 
     // todo: better error reporting
@@ -94,6 +100,7 @@ int main(int argc, char *argv[])
       JSON_init(); // reset buffers in case of errors
       USART1_PutChar('N');
     }
+    //USART1_PutChar('A');
     __asm__("WFI"); // sleep for a bit.
   }
   return 0;

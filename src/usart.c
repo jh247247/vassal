@@ -42,7 +42,7 @@ void USART1_Init(void)
   /* Baud rate 115200, 8-bit data, One stop bit
    * No parity, Do both Rx and Tx, No HW flow control
    */
-  usart1_init_struct.USART_BaudRate = 921600;
+  usart1_init_struct.USART_BaudRate = 9600;
   usart1_init_struct.USART_WordLength = USART_WordLength_8b;
   usart1_init_struct.USART_StopBits = USART_StopBits_1;
   usart1_init_struct.USART_Parity = USART_Parity_No ;

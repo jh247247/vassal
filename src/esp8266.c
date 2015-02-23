@@ -44,10 +44,10 @@ unsigned char ESP8266_test(void) {
 }
 
 unsigned char ESP8266_connect(char* ssid, char* pass) {
-  USART1_PutString("AT+CWJAP=\"");
-  USART1_PutString(ssid);
-  USART1_PutString("\",\"");
-  USART1_PutString(pass);
+  USART2_PutString("AT+CWJAP=\"");
+  USART2_PutString(ssid);
+  USART2_PutString("\",\"");
+  USART2_PutString(pass);
   return ESP8266_sendCommand("\"\r\n",20000);
 }
 
@@ -60,12 +60,12 @@ unsigned char ESP8266_sendPacket(char* type, char* ip, char* port,
   char buf[6];
   int i;
   // start session
-  USART1_PutString("AT+CIPSTART=\"");
-  USART1_PutString(type);
-  USART1_PutString("\",\"");
-  USART1_PutString(ip);
-  USART1_PutString("\",");
-  USART1_PutString(port);
+  USART2_PutString("AT+CIPSTART=\"");
+  USART2_PutString(type);
+  USART2_PutString("\",\"");
+  USART2_PutString(ip);
+  USART2_PutString("\",");
+  USART2_PutString(port);
   if(!ESP8266_sendCommand("\r\n",5000)) {
     // module timed out, send close just in case
     ESP8266_sendCommand("AT+CIPCLOSE\r\n", 0);
@@ -74,15 +74,15 @@ unsigned char ESP8266_sendPacket(char* type, char* ip, char* port,
 
   // assume that the data is not null terminated,
   itoa(buf,length,10);
-  USART1_PutString("AT+CIPSEND=");
-  USART1_PutString(buf);
-  USART1_PutString("\r\n");
+  USART2_PutString("AT+CIPSEND=");
+  USART2_PutString(buf);
+  USART2_PutString("\r\n");
   if(!ESP8266_waitForPacketStart(5000)) {
     ESP8266_sendCommand("AT+CIPCLOSE\r\n", 0);
     return 0;
   }
   for(i = 0; i < length; i++) {
-    USART1_PutChar(data[i]);
+    USART2_PutChar(data[i]);
   }
   if(!ESP8266_sendCommand("\r\n",5000)) {
     ESP8266_sendCommand("AT+CIPCLOSE\r\n", 0);
@@ -93,7 +93,7 @@ unsigned char ESP8266_sendPacket(char* type, char* ip, char* port,
 
 // timeout in ms
 unsigned char ESP8266_sendCommand(char* command, int timeout) {
-  USART1_PutString(command);
+  USART2_PutString(command);
 
   // start checking for timeout
   // this may have to be a bit smarter in the end
@@ -103,14 +103,14 @@ unsigned char ESP8266_sendCommand(char* command, int timeout) {
 
 
 unsigned char ESP8266_waitForOK(int timeout) {
-  return USART_waitForString(USART1, "OK", timeout*sysTicksPerMillisecond);
+  return USART_waitForString(USART2, "OK", timeout*sysTicksPerMillisecond);
 }
 
 
 unsigned char ESP8266_waitForReady(int timeout) {
-  return USART_waitForString(USART1, "ready", timeout*sysTicksPerMillisecond);
+  return USART_waitForString(USART2, "ready", timeout*sysTicksPerMillisecond);
 }
 
 unsigned char ESP8266_waitForPacketStart(int timeout) {
-  return USART_waitForString(USART1, ">", timeout*sysTicksPerMillisecond);
+  return USART_waitForString(USART2, ">", timeout*sysTicksPerMillisecond);
 }

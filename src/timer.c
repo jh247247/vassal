@@ -10,12 +10,13 @@
 #include "timer.h"
 #include "usart.h"
 
+volatile unsigned int g_sysTick;
 
 int TIM_init(){
   RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
 
   TIM_TimeBaseInitTypeDef timerInitStructure;
-  timerInitStructure.TIM_Prescaler = 24000;
+  timerInitStructure.TIM_Prescaler = 12000; // aim for 60 fps
   timerInitStructure.TIM_CounterMode = TIM_CounterMode_Up;
   timerInitStructure.TIM_Period = 100;
   timerInitStructure.TIM_ClockDivision = TIM_CKD_DIV1;
@@ -31,15 +32,19 @@ int TIM_init(){
   n.NVIC_IRQChannelCmd = ENABLE;
   NVIC_Init(&n);
 
+  g_sysTick = 0;
+
   return 0;
 }
 
-// TODO
 void TIM2_IRQHandler()
 {
-  //USART1_PutString("irq\n");
-  if (TIM_GetITStatus(TIM2, TIM_IT_Update) != RESET)
-    {
-      TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
-    }
+  if (TIM_GetITStatus(TIM2, TIM_IT_Update) != RESET) {
+    g_sysTick++;
+    TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
+  }
+}
+
+unsigned int TIM_getSysTick() {
+  return g_sysTick;
 }

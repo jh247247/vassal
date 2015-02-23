@@ -15,11 +15,11 @@
 #define Set_nRd GPIOC->BSRR = (1<<15);
 #define Clr_nRd GPIOC->BRR = (1<<15);
 
-#define Set_Rst GPIOA->BSRR = (1<<15);
-#define Clr_Rst GPIOA->BRR = (1<<15);
+#define Set_Rst GPIOB->BSRR = (1<<5);
+#define Clr_Rst GPIOB->BRR = (1<<5);
 
-#define LCD_Light_On GPIOD->BSRR = (1<<5);
-#define LCD_Light_Off GPIOD->BRR = (1<<5);
+#define LCD_Light_On GPIOB->BSRR = (1<<2);
+#define LCD_Light_Off GPIOB->BRR = (1<<2);
 
 #define u16 unsigned int
 #define u8 unsigned char
