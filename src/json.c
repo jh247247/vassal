@@ -241,9 +241,11 @@ int JSON_render() {
                                 // animations... FIXME
 
   if(!GFX_hasAnimationsPending()) {
+    GFX_animReset();
     JSON_ANIM_LOCK_CLEAR;
   } else {
     JSON_ANIM_LOCK_SET;
+    USART1_PutString("Has animations pending, render\n");
     GFX_renderAnim();
     return 0;
   }
@@ -287,13 +289,11 @@ int JSON_render() {
                        g_tokens[i+1].size);
     } else if(t[i].type == JSMN_OBJECT && !JSON_ANIM_LOCK_GET) {
       // woah, we have an object!
-      USART1_PutChar('a');
+      USART1_PutString("Appending animation to list\n");
       GFX_appendAnim(&t[i],g_jsonInBuf[buf]);
     }
   }
 
-
   JSON_BUF_CLEAR_READY(buf);
-  USART1_PutChar('D');
   return 0;
 }

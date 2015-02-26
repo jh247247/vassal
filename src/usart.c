@@ -42,7 +42,7 @@ void USART1_Init(void)
   /* Baud rate 115200, 8-bit data, One stop bit
    * No parity, Do both Rx and Tx, No HW flow control
    */
-  usart1_init_struct.USART_BaudRate = 9600;
+  usart1_init_struct.USART_BaudRate = 115200;
   usart1_init_struct.USART_WordLength = USART_WordLength_8b;
   usart1_init_struct.USART_StopBits = USART_StopBits_1;
   usart1_init_struct.USART_Parity = USART_Parity_No ;
@@ -79,7 +79,7 @@ void USART1_PutString(const char * str)
       USART1_PutChar(*str);
       str++;
     }
-  USART1_PutChar('\0');
+  //USART1_PutChar('\0');
 }
 
 void USART1_IRQHandler()

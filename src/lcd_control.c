@@ -34,7 +34,7 @@ void LCD_Configuration(void)
   // This is just the lower 8 bits of data
   GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0|GPIO_Pin_1|GPIO_Pin_2|
     GPIO_Pin_3|GPIO_Pin_4|GPIO_Pin_5|GPIO_Pin_6|GPIO_Pin_7;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
   GPIO_Init(GPIOA,&GPIO_InitStructure);
 
@@ -430,7 +430,7 @@ void LCD_DrawPicture1bpp(u16 Startx,u16 Starty,u16 Endx,u16 Endy,
 /* } */
 
 void LCD_DrawPicture16bpp(u16 Startx,u16 Starty,u16 Endx,u16 Endy,
-                         u16 *pic)
+                          u16 *pic)
 {
   u32 cond = (Endx-Startx)*(Endy-Starty);
   LCD_SetWindow(Startx,Starty,Endx,Endy);
@@ -509,11 +509,16 @@ void LCD_DrawString(u16 Startx, u16 Starty, u16 foreground,
                     u16 background, u8 trans, const char* s) {
   u16 x = Startx;
   u16 y = Starty;
-  while (*s != '\0' && *s != '\r') {
+  while (*s != '\0' && *s != '\r' && *s != '\"') {
     if(*s == '\n'){
       y += FONT_HEIGHT;
       continue;
     }
+
+    if(*s == '\\') { // have to have an escape mech for strange chars
+      s++; // ffw to next char
+    }
+
     if(trans) {
       LCD_DrawCharTrans(x,y,*s, foreground);
     } else {

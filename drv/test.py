@@ -2,16 +2,26 @@
 
 import serial
 import time
-ser = serial.Serial('/dev/ttyUSB0',921600,timeout=1)
+import random
+
+delay = 0.0
+
+ser = serial.Serial('/dev/ttyUSB0',115200,timeout=1)
 ser.write("{\"C\":\"0\"}\0");
 time.sleep(0.1)
 ser.write("{\"C\":\"65535\"}\0");
 time.sleep(0.1)
 
-for i in range(320/5):
-    time.sleep(0.02)
-    ser.write("{\"f\":\"0,240,0,"+str(i*5)+",6000\"}\0");
-    print(i*5)
-time.sleep(0.02)
-ser.write("{\"f\":\"0,240,0,320,6000\"}\0");
+# for i in range(320/5):
+#     time.sleep(delay)
+#     ser.write("{\"f\":\"0,240,0,"+str(i*5)+","+str(random.randrange(65535))+"\"}\0");
+#     print(i*5)
+
+for i in range(320/8):
+    time.sleep(delay)
+    ser.write("{\"s\":\""+str(i*8)+",0,65535,0,0,Hello World!\"}\0");
+    print(i*8)
+
+ser.write("""{{\"t\":\"r\", \"l\":\"60\", \"x0\":\"0\", \"x1\":\"240\",
+\"y0\":\"0\", \"y1\":\"0,320\", \"c0\":\"0\"}}\0""");
 ser.close()

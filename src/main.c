@@ -28,17 +28,17 @@
 #include <string.h>
 
 void clock_init(){
-  ErrorStatus HSEStartUpStatus;
+  /* ErrorStatus HSEStartUpStatus; */
 
   RCC_DeInit();
   /* RCC system reset(for debug purpose) */
-  RCC_HSEConfig(RCC_HSE_ON);
-  /* Enable HSE */
-  HSEStartUpStatus = RCC_WaitForHSEStartUp();
-  /* Wait till HSE is ready */
+  /* RCC_HSEConfig(RCC_HSE_ON); */
+  /* /\* Enable HSE *\/ */
+  /* HSEStartUpStatus = RCC_WaitForHSEStartUp(); */
+  /* /\* Wait till HSE is ready *\/ */
 
-  if(HSEStartUpStatus == SUCCESS)
-    {
+  /* if(HSEStartUpStatus == SUCCESS) */
+  /*   { */
       FLASH_PrefetchBufferCmd(FLASH_PrefetchBuffer_Enable);
       /* Enable Prefetch Buffer */
       FLASH_SetLatency(FLASH_Latency_2);
@@ -50,7 +50,7 @@ void clock_init(){
       RCC_PCLK1Config(RCC_HCLK_Div2);
       /* PCLK1 = HCLK/2 */
       RCC_PLLConfig(RCC_PLLSource_HSI_Div2, RCC_PLLMul_16);
-      SystemCoreClock = 64000000;
+
       RCC_PLLCmd(ENABLE);
       /* Enable PLL */
       while(RCC_GetFlagStatus(RCC_FLAG_PLLRDY) == RESET);
@@ -60,7 +60,11 @@ void clock_init(){
       /* Select PLL as system clock source */
       while(RCC_GetSYSCLKSource() != 0x08);
       /* Wait till PLL is used as system clock source */
-    }
+    /* } */
+
+      SystemCoreClock = 16*4000000;
+      // 64 MHz is the highest it can go on HSI, don't know about
+      // current but wake from sleep is faster at least
 }
 
 

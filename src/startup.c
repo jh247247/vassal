@@ -202,21 +202,10 @@ void __Init_Data(void) {
 #include "math.h"
 
 void Reset_Handler(void) {
-  // before doing anything, check if we need to reset to bootloader.
-  if(*(unsigned long*)BOOTLOADER_MAGIC_RAM_ADDRESS ==
-     BOOTLOADER_MAGIC_RAM_VALUE) {
-
-  /*   // woo! bootloader time! */
-  /*   // invalidate so we don't get stuck in a loop. */
-    //*(unsigned long*)BOOTLOADER_MAGIC_RAM_ADDRESS = 0;
-  /*   BOOTLOADER_jump_to(BOOTLOADER_SYSMEM_ADDR); */
-  /*   while(1); // should not get here. */
-  }
-
   __Init_Data(); /* Initialize memory, data and bss */
   extern u32 _isr_vectors_offs; /* the offset to the vector table in ram */
   SCB->VTOR = 0x08000000 | ((u32)&_isr_vectors_offs & (u32)0x1FFFFF80); /* set interrupt vector table address */
-  //SystemInit(); /* configure the clock */
+  SystemInit(); /* configure the clock */
   main(); /* start execution of the program */
   while(1) {}
 }
