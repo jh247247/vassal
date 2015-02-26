@@ -240,6 +240,7 @@ int JSON_render() {
   int buf = JSON_nextFullBuf(); // wait, what do I do with
                                 // animations... FIXME
 
+
   if(!GFX_hasAnimationsPending()) {
     GFX_animReset();
     JSON_ANIM_LOCK_CLEAR;
