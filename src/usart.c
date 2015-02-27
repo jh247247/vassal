@@ -84,7 +84,6 @@ void USART1_PutString(const char * str)
 
 void USART1_IRQHandler()
 {
-
   if(USART_GetFlagStatus(USART1, USART_IT_RXNE) != RESET) {
     JSON_appendToBuf(USART_ReceiveData(USART1));
   }

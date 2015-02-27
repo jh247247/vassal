@@ -270,7 +270,7 @@ void LCD_FillRect(u16 Startx, u16 Starty, u16 Endx, u16 Endy, u16 Color)
   Clr_Cs;
   LCD_WriteIndex(0x22);         // GRAM access port
   Set_Rs;
-  for (i=(Endx-Startx)*(Endy-Starty);i > 0; i--)
+  for (i=(Endx-Startx+1)*(Endy-Starty+1);i > 0; i--)
     {
       LCD_WriteData(Color);
       Clr_nWr;
