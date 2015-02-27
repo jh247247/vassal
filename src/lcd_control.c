@@ -21,6 +21,9 @@ u16 LCD_DeviceCode;
 
 static LCD_OrientationMode_t orientation_mode = LCD_ORIENTATION_DEFAULT;
 
+// this is not type safe, use only for ints and such.
+#define SWAP(a, b)  do { a ^= b; b ^= a; a ^= b; } while(0)
+
 void LCD_Configuration(void)
 {
   GPIO_InitTypeDef GPIO_InitStructure;
@@ -174,18 +177,25 @@ inline void LCD_SetCursor(u16 x,u16 y)
 __inline void LCD_SetWindow(u16 Startx,u16 Starty,u16 Endx,u16 Endy)
 {
 
-  int temp;
   // check some sanity
   if(Endy < Starty) {
-    temp = Starty;
-    Starty = Endy;
-    Endy = temp;
+    SWAP(Endy, Starty);
   }
 
   if(Endx < Startx) {
-    temp = Startx;
-    Startx = Endy;
-    Endy = temp;
+    SWAP(Endx,Startx);
+  }
+
+  if(Endy < 0 || Endx < 0) {
+    return; // not possible to draw...
+  }
+
+  if(Starty < 0) {
+    Starty = 0;
+  }
+
+  if(Startx < 0) {
+    Startx = 0;
   }
 
 #if LCD_ORIENTATION == LCD_LANDSCAPE
@@ -231,12 +241,35 @@ void LCD_Clear(u16 Color)
 void LCD_FillRect(u16 Startx, u16 Starty, u16 Endx, u16 Endy, u16 Color)
 {
   u32 i;
+
+  // check some sanity
+  if(Endy < Starty) {
+    SWAP(Endy, Starty);
+  }
+
+  if(Endx < Startx) {
+    SWAP(Endx,Startx);
+  }
+
+  if(Endy < 0 || Endx < 0) {
+    return; // not possible to draw...
+  }
+
+  if(Starty < 0) {
+    Starty = 0;
+  }
+
+  if(Startx < 0) {
+    Startx = 0;
+  }
+
+
   LCD_SetWindow(Startx,Starty,Endx,Endy);
   LCD_SetCursor(Startx,Starty);
   Clr_Cs;
   LCD_WriteIndex(0x22);         // GRAM access port
   Set_Rs;
-  for (i=(Endx-Startx+1)*(Endy-Starty);i > 0;i--)
+  for (i=(Endx-Startx)*(Endy-Starty);i > 0; i--)
     {
       LCD_WriteData(Color);
       Clr_nWr;
