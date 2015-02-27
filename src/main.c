@@ -27,6 +27,8 @@
 
 #include <string.h>
 
+#include "util.h"
+
 void clock_init(){
   /* ErrorStatus HSEStartUpStatus; */
 
@@ -102,7 +104,11 @@ int main(int argc, char *argv[])
       continue;
     } else if(r != 0) {
       JSON_init(); // reset buffers in case of errors
+      char abuf[32];
+      itoa(abuf, r, 10);
+      USART1_PutString(abuf);
       USART1_PutChar('N');
+      USART1_PutChar('\n');
     }
     //USART1_PutChar('A');
     __asm__("WFI"); // sleep for a bit.

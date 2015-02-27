@@ -99,7 +99,10 @@ void LCD_DrawPicture8bpp(u16 Startx,u16 Starty,u16 Endx,u16 Endy,
 			 u8 *pic);
 void LCD_DrawPicture16bpp(u16 Startx,u16 Starty,u16 Endx,u16 Endy,
 			 u16 *pic);
-void LCD_DrawChar(u16 Startx,u16 Starty,u8 c, u16 foreground, u16 background);
+void LCD_DrawChar(u16 Startx,u16 Starty,u8 c, u16 foreground,
+		  u16 background);
+int LCD_StringLength(const char* c);
+
 void LCD_DrawString(u16 Startx, u16 Starty, u16 foreground,
 		    u16 background, u8 trans, const char* s);
 void LCD_SetPoint(u16 x,u16 y,u16 Color);

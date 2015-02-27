@@ -16,6 +16,7 @@
 #include "lcd_control.h"
 #include "smallfont.h"
 #include "stdlib.h"
+#include "string.h"
 
 u16 LCD_DeviceCode;
 
@@ -535,6 +536,14 @@ void LCD_DrawCharTrans(u16 Startx,u16 Starty,u8 c, u16 foreground)
 
 }
 
+// get string length in pixels
+int LCD_StringLength(const char* s) {
+  const char* bak = s;
+  while (*s != '\0' && *s != '\r' && *s != '\"') {
+    s++;
+  }
+  return (s-bak)*FONT_WIDTH;
+}
 
 // it would be nice to make this nicer for different rotations etc
 // todo: figure out how to disable clipping for non-trans strings

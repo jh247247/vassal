@@ -32,7 +32,7 @@ typedef struct {
 json_flags_t g_jsonFlags;
 
 #define JSON_ANIM_LOCK_GET (g_jsonFlags.animLock)
-#define JSON_ANIM_LOCK_SET (g_jsonFlags.animLock = 1)
+#define JSON_ANIM_LOCK_SET(x) do{g_jsonFlags.animLock = 1;}while(0)
 #define JSON_ANIM_LOCK_CLEAR do{(g_jsonFlags.animLock = 0);     \
     g_jsonFlags.readBuf = -1;}while(0)
 
@@ -55,7 +55,7 @@ int JSON_nextFullBuf() {
     return g_jsonFlags.readBuf;
   }
 
-  while(!JSON_BUF_IS_READY(i) && i < JSON_AMOUNT_OF_BUFS) {
+  while(!JSON_BUF_IS_READY(i) && i < JSON_AMOUNT_OF_BUFS ) {
     i++;
   }
 
@@ -69,7 +69,7 @@ int JSON_nextFullBuf() {
 int JSON_nextEmptyBuf() {
   // linear search for next buffer that is empty
   int i = 0;
-  while(JSON_BUF_IS_READY(i) && i < JSON_AMOUNT_OF_BUFS) {
+  while(JSON_BUF_IS_READY(i) && i < JSON_AMOUNT_OF_BUFS){
     i++;
   }
 
@@ -114,6 +114,7 @@ void JSON_appendToBuf(char c) {
   if(*(g_jsonInBuf[i]+g_jsonLen[i]-1) == '\0') {
     // end of string, set the bit int the readybufs
     JSON_BUF_SET_READY(g_jsonFlags.writeBuf);
+    g_jsonFlags.writeBuf = -1;
   }
 }
 
@@ -236,19 +237,25 @@ const char* JSON_renderStatic(int toknum, int buf);
 int JSON_render() {
   int i;
   int r = 0;
-  // parse the input
-  int buf = JSON_nextFullBuf(); // wait, what do I do with
-                                // animations... FIXME
 
+  USART1_PutChar((char)JSON_ANIM_LOCK_GET);
 
   if(!GFX_hasAnimationsPending()) {
+    USART1_PutString("Animation done!");
     GFX_animReset();
     JSON_ANIM_LOCK_CLEAR;
   } else {
-    JSON_ANIM_LOCK_SET;
     GFX_renderAnim();
     return 0;
   }
+
+  char abuf[32];
+  // parse the input
+  int buf = JSON_nextFullBuf();
+
+  itoa(abuf, buf, 10);
+  USART1_PutString(abuf);
+  USART1_PutChar('\n');
 
   if(buf < 0) {
     return 3; // wooo
@@ -290,9 +297,11 @@ int JSON_render() {
     } else if(t[i].type == JSMN_OBJECT && !JSON_ANIM_LOCK_GET) {
       // woah, we have an object!
       GFX_appendAnim(&t[i],g_jsonInBuf[buf]);
+
     }
   }
 
   JSON_BUF_CLEAR_READY(buf);
+
   return 0;
 }

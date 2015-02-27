@@ -9,6 +9,7 @@ OBJS+=json.o
 OBJS+=gfx.o
 OBJS+=util.o
 OBJS+=bootloader.o
+OBJS+=smallfont.o
 
 
 all: src
