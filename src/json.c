@@ -60,8 +60,10 @@ int JSON_nextFullBuf() {
   }
 
   if(i == JSON_AMOUNT_OF_BUFS) {
-    return -1; // NO FULL BUFS
+    i =  -1; // NO FULL BUFS
   }
+
+  g_jsonFlags.readBuf = i;
 
   return i;
 }
@@ -243,6 +245,7 @@ int JSON_render() {
   if(!GFX_hasAnimationsPending()) {
     USART1_PutString("Animation done!");
     GFX_animReset();
+    JSON_BUF_CLEAR_READY(g_jsonFlags.readBuf);
     JSON_ANIM_LOCK_CLEAR;
   } else {
     GFX_renderAnim();
@@ -301,7 +304,6 @@ int JSON_render() {
     }
   }
 
-  JSON_BUF_CLEAR_READY(buf);
 
   return 0;
 }
