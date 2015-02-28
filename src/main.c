@@ -85,12 +85,14 @@ int main(int argc, char *argv[])
   clock_init(); // hey, you can overclock later here. maybe.
 
 
-  LCD_Configuration();
-  LCD_Initialization();
-  LCD_Clear(LCD_Black);
+
   JSON_init();
   USART1_Init();
   TIM_init();
+
+  LCD_Configuration();
+  LCD_Initialization();
+  LCD_Clear(LCD_Black);
 
   USART1_PutString("***** INIT DONE *****\n");
 

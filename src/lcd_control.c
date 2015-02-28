@@ -18,6 +18,8 @@
 #include "stdlib.h"
 #include "string.h"
 
+#include"usart.h"
+
 u16 LCD_DeviceCode;
 
 static LCD_OrientationMode_t orientation_mode = LCD_ORIENTATION_DEFAULT;
@@ -570,6 +572,7 @@ void LCD_DrawString(u16 Startx, u16 Starty, u16 foreground,
     s++;
     x += FONT_WIDTH;
   }
+
 }
 
 /*

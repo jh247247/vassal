@@ -240,10 +240,7 @@ int JSON_render() {
   int i;
   int r = 0;
 
-  USART1_PutChar((char)JSON_ANIM_LOCK_GET);
-
   if(!GFX_hasAnimationsPending()) {
-    USART1_PutString("Animation done!");
     GFX_animReset();
     JSON_BUF_CLEAR_READY(g_jsonFlags.readBuf);
     JSON_ANIM_LOCK_CLEAR;
@@ -252,13 +249,9 @@ int JSON_render() {
     return 0;
   }
 
-  char abuf[32];
   // parse the input
   int buf = JSON_nextFullBuf();
 
-  itoa(abuf, buf, 10);
-  USART1_PutString(abuf);
-  USART1_PutChar('\n');
 
   if(buf < 0) {
     return 3; // wooo
@@ -267,6 +260,7 @@ int JSON_render() {
   jsmn_parser p;
   jsmntok_t* t = g_tokens;
   int len = g_jsonLen[buf];
+  int skipTo = 0; // skip to this index when anim found
 
   // don't need to re-parse if we are playing some animation
   if(!JSON_ANIM_LOCK_GET) {
@@ -293,6 +287,11 @@ int JSON_render() {
   // note that all the static stuff is rendered every single time an
   // animation is played
   for(i = 1; i < r; i++) {
+    // ffw until tokens outside of the animation.
+    if(t[i].start < skipTo) {
+      continue;
+    }
+
     if(t[i].type == JSMN_STRING) {
       GFX_renderStatic(g_jsonInBuf[buf][g_tokens[i].start],
                        &g_jsonInBuf[buf][g_tokens[i+1].start],
@@ -300,7 +299,7 @@ int JSON_render() {
     } else if(t[i].type == JSMN_OBJECT && !JSON_ANIM_LOCK_GET) {
       // woah, we have an object!
       GFX_appendAnim(&t[i],g_jsonInBuf[buf]);
-
+      skipTo = t[i].end;
     }
   }
 
