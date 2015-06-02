@@ -1001,3 +1001,26 @@ uint16_t LCD_GetHeight(void)
       return LCD_HEIGHT_HW;
     }
 }
+
+// if state is non zero, make the lcd sleep.
+void LCD_Standby(int state) {
+  int i;
+  if(state) {
+    LCD_Light_Off;
+
+    LCD_WriteRegister(0x0007,0x0131);
+    for (i = 50000;i > 0;i--) __asm__("nop");
+    LCD_WriteRegister(0x0007,0x0130);
+    for (i = 50000;i > 0;i--) __asm__("nop");
+    LCD_WriteRegister(0x0007,0x0000); // turn off display...
+
+    LCD_WriteRegister(0x0010,0x0080);
+    LCD_WriteRegister(0x0011,0x0000);
+    LCD_WriteRegister(0x0012,0x0000);
+    LCD_WriteRegister(0x0013,0x0000);
+    for (i = 50000;i > 0;i--) __asm__("nop");
+    LCD_WriteRegister(0x0010,0x0082); // screen now asleep!
+  } else {
+    LCD_Initialization();
+  }
+}

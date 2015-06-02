@@ -87,14 +87,14 @@ int main(int argc, char *argv[])
 
 
   JSON_init();
-  USART1_Init();
+  USART_Config();
   TIM_init();
 
   LCD_Configuration();
   LCD_Initialization();
   LCD_Clear(LCD_Black);
 
-  USART1_PutString("***** INIT DONE *****\n");
+  USART_PutString(HOST_USART,"***** INIT DONE *****\n");
 
   while(1) {
 
@@ -108,9 +108,9 @@ int main(int argc, char *argv[])
       JSON_init(); // reset buffers in case of errors
       char abuf[32];
       itoa(abuf, r, 10);
-      USART1_PutString(abuf);
-      USART1_PutChar('N');
-      USART1_PutChar('\n');
+      USART_PutString(HOST_USART, abuf);
+      USART_PutChar(HOST_USART, 'N');
+      USART_PutChar(HOST_USART, '\n');
     }
     //USART1_PutChar('A');
     __asm__("WFI"); // sleep for a bit.

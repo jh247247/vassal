@@ -6,7 +6,7 @@ import random
 
 delay = 0.3
 
-ser = serial.Serial('/dev/ttyUSB0',115200,timeout=1)
+ser = serial.Serial('/dev/ttyUSB1',115200,timeout=1)
 ser.write("{\"C\":\"0\"}\0");
 time.sleep(0.1)
 ser.write("{\"C\":\"65535\"}\0");

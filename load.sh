@@ -7,6 +7,6 @@ make
 
 killall cutecom
 
-stm32flash -w main.bin -b 115200 -v -g 0x0 /dev/ttyUSB0
+stm32flash -w main.bin -b 115200 -v -g 0x0 /dev/ttyUSB1
 
 cutecom &
