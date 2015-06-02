@@ -1,0 +1,18 @@
+Please note: This is a snapshot before a hardware failure caused me to
+lose code. Probably should have uploaded to Github earlier before I
+lost all the really cool stuff.
+
+* Vassal
+  This project is rather aptly named (in my opinion) because it
+  depends on a bluetooth master, otherwise it is pretty much useless.
+
+  For example, this version of the code is pretty much a remote
+  display for the master. Whatever is supposed to be displayed is sent
+  encapsulated in JSON. Added on top of this is some cool animation
+  interpolation stuff that I am actually pretty proud of.
+
+  Might not be in the best of shape, but the code compiles. I'll
+  probably get around to uploading the schematics one day too.
+
+  Next project should really start off on here from the start, don't
+  want to suffer another embarrassment like this again...
